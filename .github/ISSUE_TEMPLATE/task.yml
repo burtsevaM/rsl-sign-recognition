@@ -1,0 +1,52 @@
+name: Task
+description: Зафиксировать техническую или process-задачу для clean ML runtime repo
+title: "[Task] "
+labels: []
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Используйте этот шаблон для задач по foundation, контрактам, runtime boundaries, CI и migration process.
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: Что нужно сделать?
+      placeholder: Короткое описание задачи.
+    validations:
+      required: true
+  - type: textarea
+    id: expected_result
+    attributes:
+      label: Expected result
+      description: Какой результат должен быть на выходе?
+      placeholder: Опишите ожидаемое состояние после завершения задачи.
+    validations:
+      required: true
+  - type: textarea
+    id: files_areas_touched
+    attributes:
+      label: Files/areas touched
+      description: Какие файлы, модули или зоны репозитория будут затронуты?
+      placeholder: docs/, .github/, src/contracts/, runtime docs и т.д.
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance_criteria
+    attributes:
+      label: Acceptance criteria
+      description: По каким критериям задача считается завершенной?
+      placeholder: |
+        - [ ]
+        - [ ]
+        - [ ]
+    validations:
+      required: true
+  - type: textarea
+    id: dependencies
+    attributes:
+      label: Dependencies
+      description: Какие задачи или внешние условия блокируют работу?
+      placeholder: Нет / перечислите зависимости.
+    validations:
+      required: true

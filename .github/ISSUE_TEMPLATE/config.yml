@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Open roadmap
+    url: https://github.com/burtsevaM/rsl-sign-recognition/blob/main/docs/roadmap.md
+    about: Проверьте roadmap перед созданием новой задачи или feature.
+  - name: Open backlog
+    url: https://github.com/burtsevaM/rsl-sign-recognition/blob/main/docs/backlog.md
+    about: Проверьте canonical epics, labels и стартовые задачи перед созданием issue.

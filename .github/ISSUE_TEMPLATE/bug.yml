@@ -1,0 +1,52 @@
+name: Bug report
+description: Зафиксировать дефект в clean runtime contour, документации или integration surface
+title: "[Bug] "
+labels: []
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Используйте этот шаблон для проблем в документации, контракте, runtime behavior, readiness semantics или migration surface clean repo.
+  - type: textarea
+    id: observed_behavior
+    attributes:
+      label: Observed behavior
+      description: Что происходит сейчас?
+      placeholder: Опишите наблюдаемое поведение или дефект.
+    validations:
+      required: true
+  - type: textarea
+    id: expected_behavior
+    attributes:
+      label: Expected behavior
+      description: Что должно происходить?
+      placeholder: Опишите ожидаемое поведение.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction_steps
+    attributes:
+      label: Reproduction steps
+      description: Как воспроизвести проблему?
+      placeholder: |
+        1. 
+        2. 
+        3. 
+    validations:
+      required: true
+  - type: textarea
+    id: environment_context
+    attributes:
+      label: Environment/context
+      description: В каком окружении или контексте это наблюдается?
+      placeholder: Ветка, commit, локальное окружение, mock/live режим, затронутый документ или модуль.
+    validations:
+      required: true
+  - type: textarea
+    id: possible_impact
+    attributes:
+      label: Possible impact
+      description: На что может повлиять проблема?
+      placeholder: Контракт, handoff, runtime readiness, docs consistency, risk for migration и т.д.
+    validations:
+      required: true

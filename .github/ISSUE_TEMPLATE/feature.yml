@@ -1,0 +1,60 @@
+name: Feature
+description: Зафиксировать функциональный инкремент для clean ML runtime repo
+title: "[Feature] "
+labels: []
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Используйте этот шаблон для feature-инициатив, которые расширяют clean runtime contour, но не нарушают границы между clean repo и draft repo.
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: Коротко опишите feature или migration increment.
+      placeholder: Что должно появиться в clean repo?
+    validations:
+      required: true
+  - type: textarea
+    id: motivation
+    attributes:
+      label: Motivation
+      description: Почему эта задача нужна именно сейчас?
+      placeholder: Какую проблему или риск закрывает эта feature?
+    validations:
+      required: true
+  - type: textarea
+    id: scope
+    attributes:
+      label: Scope
+      description: Что входит в задачу?
+      placeholder: Перечислите конкретные изменения, которые должны войти в scope.
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance_criteria
+    attributes:
+      label: Acceptance criteria
+      description: Перечислите проверяемые критерии завершения.
+      placeholder: |
+        - [ ]
+        - [ ]
+        - [ ]
+    validations:
+      required: true
+  - type: textarea
+    id: dependencies
+    attributes:
+      label: Dependencies
+      description: Какие задачи, артефакты, решения или команды нужны для старта?
+      placeholder: Нет / перечислите зависимости.
+    validations:
+      required: true
+  - type: textarea
+    id: out_of_scope
+    attributes:
+      label: Out of scope
+      description: Что точно не должно входить в эту задачу?
+      placeholder: Укажите non-goals, чтобы не размывать scope.
+    validations:
+      required: true
