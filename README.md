@@ -30,6 +30,7 @@
 - `README.md`;
 - `CONTRIBUTING.md`;
 - архитектурная, roadmap и backlog-документация;
+- foundation CI skeleton для `push` и `pull_request`;
 - PR template и issue templates;
 - каноническая система milestones, epics, labels и task-кодов.
 
@@ -72,5 +73,11 @@
 - Любой перенос кода, документации или контрактов из `gesture-recognition-draft` должен иметь явную задачу, scope и acceptance criteria.
 - Изменения архитектуры, интеграционного контракта или artifact policy должны сопровождаться обновлением документации в том же PR.
 - Пока не начаты отдельные migration tasks, этот репозиторий остается foundation-скелетом без продуктового runtime-кода.
+
+## Foundation CI
+
+`Foundation CI` запускается на `push` и `pull_request` и сейчас проверяет только foundation-level контур репозитория: наличие ключевых root docs, process templates и самого workflow-файла.
+
+Этот workflow намеренно не запускает contract checks, runtime smoke, artifact/config validation или backend tests. Такие направления будут добавляться поэтапно отдельными задачами, когда в clean repo действительно появятся соответствующие contract и runtime surface.
 
 Итоговая идея проста: `rsl-sign-recognition` — это clean repo для воспроизводимого product-oriented ML runtime, а `gesture-recognition-draft` остается исследовательским и переходным контуром до поэтапной миграции.
