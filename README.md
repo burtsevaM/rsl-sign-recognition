@@ -63,6 +63,7 @@
 ## Документация
 
 - [docs/architecture.md](docs/architecture.md) — назначение clean repo, целевая архитектура и границы миграции
+- [docs/contracts/websocket-contract-v1.md](docs/contracts/websocket-contract-v1.md) — versioned WebSocket contract v1 для sign-to-text runtime
 - [docs/roadmap.md](docs/roadmap.md) — milestones `M0`-`M3`, зависимости и критерии завершения
 - [docs/backlog.md](docs/backlog.md) — epics, стартовые задачи, recommended labels и acceptance criteria
 - [CONTRIBUTING.md](CONTRIBUTING.md) — правила работы через issues, branches и PR
