@@ -51,7 +51,7 @@ Clean repo должен стать местом, где живут:
 - runtime logs и machine-local recovery files;
 - `config.yaml` и другие draft runtime-конфиги без отдельной migration задачи;
 - frontend demo, experimental browser inference и другие exploratory контуры;
-- `letters` как равноправный product mode;
+- `letters` как равноправный word-oriented runtime mode;
 - `words` как равноправный долгосрочный product path.
 
 Такие элементы остаются в draft repo, пока не появится отдельное решение об их ограниченном переносе.
@@ -84,6 +84,8 @@ Clean repo должен стать местом, где живут:
 - окончательное снятие роли `words` нельзя объявлять только по факту архитектурного решения в пользу `pose_words`.
 
 До закрытия соответствующих gates `words` остается частью draft/research contour, а не основой clean repo.
+
+`letters` при этом может сохраняться в draft repo как отдельный baseline или архивный контур, но не должен автоматически мигрировать в clean word-oriented runtime repository как третий равноправный режим.
 
 ## 7. Границы между draft repo и clean repo
 
@@ -156,6 +158,15 @@ artifacts/
 - validation reports и manual experiment outputs;
 - mixed frontend/backend demo contour из draft repo.
 
+Эти шаги уже разложены по backlog-задачам и должны мигрировать именно так:
+
+- `MIG-01` — перенос только product-runtime-oriented docs и архитектурных договоренностей;
+- `CTR-01` и `CTR-02` — integration contract и mock protocol mode;
+- `RT-01` и `RT-02` — runtime skeleton и health/readiness semantics;
+- `PW-01` и `PW-02` — перенос `pose_words` runtime surface и segmentation layer;
+- `ART-01` — active artifact manifest/load path;
+- `QA-01` и `INT-01` — smoke/integration checks и handoff docs.
+
 ## 10. Интеграционный слой
 
 ### WebSocket contract
@@ -203,3 +214,5 @@ Clean runtime должен иметь как минимум:
 - manual checks там, где без них нельзя подтвердить стабильность.
 
 Все эти элементы описывают target clean architecture. Их наличие должно появляться поэтапно через отдельные milestones и issues, а не объявляться реализованным заранее.
+
+Draft-only operational details из validation/bootstrap контура сюда не переносятся как уже существующее поведение clean repo. Это относится к локальным install/promote workflow, validation outputs, конкретным активным профилям артефактов и recovery path: на этапе `M0` в clean repo фиксируется только архитектурный принцип, что active runtime artifacts, readiness gates и smoke semantics должны быть отделены от bootstrap и validation context и вводиться через отдельные задачи.
