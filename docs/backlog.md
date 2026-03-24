@@ -73,6 +73,7 @@
 - Epic: `Epic G — Handoff & migration`
 - Recommended labels: `milestone:m0`, `epic:migration`, `area:docs`, `type:task`, `priority:P1`, `size:M`
 - Dependencies: `INF-01`.
+- Follow-up task directions: `CTR-01`, `CTR-02`, `RT-01`, `RT-02`, `PW-01`, `PW-02`, `ART-01`, `QA-01`, `INT-01`.
 - Acceptance criteria:
   - [ ] Перенесены только clean-runtime-oriented формулировки и архитектурные договоренности.
   - [ ] Validation, bootstrap и draft-only operational details не представлены как часть clean runtime.

@@ -56,7 +56,7 @@
 - `pose_words` рассматривается как основной будущий product path для word recognition;
 - `words` сохраняется как baseline/reference до закрытия validation и integration условий;
 - `words` не считается равноправным долгосрочным product path в clean architecture;
-- `letters` не является основным направлением для этого clean word-oriented runtime repo.
+- `letters` не является равноправным word-oriented runtime path для clean repo и может рассматриваться только отдельной продуктовой задачей.
 
 Наличие этого решения не означает, что clean repo уже содержит рабочий runtime или production-ready реализацию. На текущем этапе зафиксированы только foundation-границы и migration path.
 
@@ -73,6 +73,16 @@
 - Любой перенос кода, документации или контрактов из `gesture-recognition-draft` должен иметь явную задачу, scope и acceptance criteria.
 - Изменения архитектуры, интеграционного контракта или artifact policy должны сопровождаться обновлением документации в том же PR.
 - Пока не начаты отдельные migration tasks, этот репозиторий остается foundation-скелетом без продуктового runtime-кода.
+
+Следующие шаги уже зафиксированы в backlog как issue-scoped migration path, а не как массовый перенос файлов:
+
+- `CTR-01` и `CTR-02` — integration contract и mock protocol mode;
+- `RT-01` и `RT-02` — runtime skeleton и health/readiness semantics;
+- `PW-01` и `PW-02` — перенос `pose_words` runtime wrapper и segmentation runtime;
+- `ART-01` — active artifact manifest/load path;
+- `QA-01` и `INT-01` — smoke/integration strategy и handoff notes.
+
+При этом текущий docs-only этап переносит только product-runtime-oriented формулировки и архитектурные договоренности. Validation workflows, bootstrap/fallback path, локальные active artifact profiles и machine-local operational runbooks остаются в `gesture-recognition-draft` до отдельных migration tasks.
 
 ## Foundation CI
 
