@@ -1,0 +1,72 @@
+name: Foundation CI
+
+on:
+  pull_request:
+  push:
+
+permissions:
+  contents: read
+
+jobs:
+  foundation-sanity:
+    name: Foundation Sanity
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Verify required foundation files
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          required_files=(
+            "README.md"
+            "CONTRIBUTING.md"
+            "docs/architecture.md"
+            "docs/backlog.md"
+            "docs/roadmap.md"
+            ".github/PULL_REQUEST_TEMPLATE.md"
+            ".github/ISSUE_TEMPLATE/task.yml"
+            ".github/workflows/foundation-ci.yml"
+          )
+
+          missing=0
+
+          for file in "${required_files[@]}"; do
+            if [[ ! -f "${file}" ]]; then
+              echo "Missing required foundation file: ${file}"
+              missing=1
+            fi
+          done
+
+          if [[ "${missing}" -ne 0 ]]; then
+            exit 1
+          fi
+
+          echo "Foundation repository structure looks consistent."
+
+      - name: Reserved docs checks expansion
+        shell: bash
+        run: |
+          cat <<'EOF'
+          Reserved future CI direction:
+          - richer docs checks can be added later as dedicated repository rules appear.
+          EOF
+
+      - name: Reserved contract checks expansion
+        shell: bash
+        run: |
+          cat <<'EOF'
+          Reserved future CI direction:
+          - contract checks are intentionally not implemented in M0 because the clean repo does not yet contain the versioned runtime contract.
+          EOF
+
+      - name: Reserved runtime-surface and smoke expansion
+        shell: bash
+        run: |
+          cat <<'EOF'
+          Reserved future CI direction:
+          - runtime-surface and smoke checks are intentionally not implemented in M0 because the clean repo does not yet contain a migrated backend runtime.
+          EOF
