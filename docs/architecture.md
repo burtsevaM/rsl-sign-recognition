@@ -178,6 +178,8 @@ Clean repo должен содержать versioned WebSocket contract для s
 - с отдельным описанием control messages, payload и ошибок;
 - с документированной совместимостью для web team.
 
+Текущая зафиксированная версия контракта описана в [docs/contracts/websocket-contract-v1.md](contracts/websocket-contract-v1.md).
+
 ### Mock mode
 
 До полной готовности runtime нужен mock protocol mode:
