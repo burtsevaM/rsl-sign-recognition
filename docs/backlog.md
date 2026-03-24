@@ -1,8 +1,8 @@
 # BACKLOG
 
-Этот backlog фиксирует foundation-level план для clean repo `rsl-sign-recognition`.
+Этот backlog фиксирует канонический foundation-level план для clean repo `rsl-sign-recognition`.
 
-Он нужен как основа для будущей настройки GitHub milestones, labels и issues, но сам по себе не означает, что задачи уже заведены или выполнены.
+Он нужен как source of truth для milestones, epics, labels и task-кодов. Когда задачи уже заведены в GitHub, их текущий статус отслеживается через issues и PR, а backlog остается каноническим описанием scope и acceptance criteria.
 
 ## Канонические milestones
 
