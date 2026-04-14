@@ -32,7 +32,7 @@ Clean repo должен стать местом, где живут:
 После поэтапной миграции сюда должны входить только product-facing и reproducible части:
 
 - versioned WebSocket contract и integration docs;
-- runtime skeleton и orchestration для основного pipeline;
+- runtime skeleton c явными модулями `api`, `contracts`, `runtime`, `pipelines`, `segmentation` и `inference`;
 - `pose_words` inference path, segmentation runtime и связанная readiness-логика;
 - artifact manifest/load policy для active runtime artifacts;
 - smoke, contract и integration checks;
@@ -106,38 +106,40 @@ Clean repo должен стать местом, где живут:
 - draft repo остается источником правды по текущему состоянию и validation context;
 - массовое копирование директорий, runtime-кода и артефактов запрещено.
 
-## 8. Предлагаемая структура будущего репозитория
+## 8. Runtime skeleton и target module structure
 
-Ниже описана целевая структура, а не текущие файлы foundation-этапа.
+RT-01 фиксирует **целевую** структуру runtime surface, а не текущие файлы foundation-этапа.
+
+Подробное описание границ и non-goals вынесено в [docs/runtime-skeleton.md](runtime-skeleton.md).
+
+Короткая версия target layout:
 
 ```text
 docs/
 .github/
-configs/
 src/
   api/
   contracts/
   runtime/
   pipelines/
     pose_words/
-    words_baseline/   # только если baseline нужен осознанно
-  features/
-    pose/
+    words_baseline/   # только отдельной задачей и только как baseline/reference
   segmentation/
   inference/
-  decoding/
 tests/
-tools/
-artifacts/
 ```
 
-Принципы этой структуры:
+Ключевые правила этого skeleton:
 
-- transport/API слой должен быть тонким;
-- contract layer должен быть versioned и явным;
-- runtime orchestration не должен жить вперемешку с train/export кодом;
-- artifacts должны быть отделены от validation outputs и bootstrap fallback;
-- baseline-модули допускаются только как явно ограниченные и вторичные.
+- transport/API слой остается тонким и заканчивается на handoff в orchestration layer;
+- `contracts` описывают versioned external surface и не смешиваются с `runtime`;
+- `runtime` отвечает за orchestration, session flow и coordination зависимостей;
+- `pipelines` задают composition конкретных recognition paths и не подменяют `segmentation` или `inference`;
+- `segmentation` и `inference` остаются самостоятельными runtime layers;
+- `pose_words` зафиксирован как основной pipeline, `words` допустим только как baseline/reference, `letters` не считается равноправным word-oriented runtime path;
+- training/export, dataset tooling, bootstrap/fallback paths и draft-only operational details в runtime skeleton не входят.
+
+Важно: эта структура пока остается **описанием целевого layout**, а не заявлением, что runtime-модули уже перенесены в clean repo.
 
 ## 9. Приоритеты migration
 
@@ -179,6 +181,12 @@ Clean repo должен содержать versioned WebSocket contract для s
 - с документированной совместимостью для web team.
 
 Текущая зафиксированная версия контракта описана в [docs/contracts/websocket-contract-v1.md](contracts/websocket-contract-v1.md).
+
+В контексте runtime skeleton это означает:
+
+- `contracts` хранят versioned envelope и payload semantics;
+- `api` реализует transport surface поверх этого контракта;
+- `runtime` и связанные с ним pipeline layers не должны владеть wire-format как внутренней архитектурной моделью.
 
 ### Mock mode
 
