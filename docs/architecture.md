@@ -32,8 +32,8 @@ Clean repo должен стать местом, где живут:
 После поэтапной миграции сюда должны входить только product-facing и reproducible части:
 
 - versioned WebSocket contract и integration docs;
-- runtime skeleton с явными модулями `api`, `contracts`, `runtime`,
-  `pipelines`, `segmentation` и `inference`;
+- runtime skeleton с явными модулями `api`, `contracts`, `runtime`, `pipelines`,
+  `segmentation` и `inference`;
 - `pose_words` inference path, segmentation runtime и связанная readiness-логика;
 - artifact manifest/load policy для active runtime artifacts;
 - smoke, contract и integration checks;
@@ -189,8 +189,8 @@ Clean repo должен содержать versioned WebSocket contract для s
 
 - `contracts` хранят versioned envelope и payload semantics;
 - `api` реализует transport surface поверх этого контракта;
-- `runtime` и связанные с ним pipeline layers не должны владеть wire-format
-  как внутренней архитектурной моделью.
+- `runtime` и связанные с ним pipeline layers не должны владеть
+  wire-format как внутренней архитектурной моделью.
 
 ### Mock mode
 
@@ -227,6 +227,8 @@ Clean runtime должен иметь как минимум:
 - integration smoke для handoff с web team;
 - manual checks там, где без них нельзя подтвердить стабильность.
 
-Все эти элементы описывают target clean architecture. Их наличие должно появляться поэтапно через отдельные milestones и issues, а не объявляться реализованным заранее.
+Все эти элементы описывают target clean architecture. Их наличие должно
+появляться поэтапно через отдельные milestones и issues, а не объявляться
+реализованным заранее.
 
 Draft-only operational details из validation/bootstrap контура сюда не переносятся как уже существующее поведение clean repo. Это относится к локальным install/promote workflow, validation outputs, конкретным активным профилям артефактов и recovery path: на этапе `M0` в clean repo фиксируется только архитектурный принцип, что active runtime artifacts, readiness gates и smoke semantics должны быть отделены от bootstrap и validation context и вводиться через отдельные задачи.
