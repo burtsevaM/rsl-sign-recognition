@@ -1,0 +1,22 @@
+{
+  "type": "recognition.result",
+  "contract_version": "1.0",
+  "payload": {
+    "status": "HOLD",
+    "word": "ПРИВЕТ",
+    "confidence": 0.93,
+    "hand_present": true,
+    "hold": {
+      "elapsed_ms": 2,
+      "remaining_ms": 1,
+      "target_ms": 3,
+      "progress": 0.6667,
+      "unit": "segments"
+    },
+    "text_state": {
+      "value": "",
+      "committed": false
+    },
+    "timestamp_ms": 12452012
+  }
+}
