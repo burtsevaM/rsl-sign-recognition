@@ -1,0 +1,9 @@
+{
+  "type": "error",
+  "contract_version": "1.0",
+  "payload": {
+    "code": "runtime_unavailable",
+    "message": "Runtime недоступен для текущей сессии.",
+    "recoverable": false
+  }
+}

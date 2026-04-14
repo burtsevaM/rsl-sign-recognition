@@ -661,6 +661,8 @@ CTR-02 (`mock protocol mode`) должен:
 
 CTR-01 фиксирует контракт так, чтобы CTR-02 мог строиться **поверх него**, а не параллельно ему.
 
+Подробная фиксация mock path вынесена в [docs/contracts/mock-protocol-mode.md](mock-protocol-mode.md), а минимальные contract-level fixtures — в `docs/contracts/fixtures/`.
+
 ### Что web team не должна ожидать от CTR-01
 
 CTR-01 **не обещает**:

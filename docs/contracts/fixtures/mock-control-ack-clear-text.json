@@ -1,0 +1,8 @@
+{
+  "type": "control.ack",
+  "contract_version": "1.0",
+  "payload": {
+    "action": "clear_text",
+    "accepted": true
+  }
+}
