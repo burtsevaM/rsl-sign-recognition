@@ -13,6 +13,8 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      # Keep checkout on v5 so this PR no longer inherits the deprecated
+      # Node.js 20 warning from older checkout runtime versions.
       - name: Checkout repository
         uses: actions/checkout@v5
 

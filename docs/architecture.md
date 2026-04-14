@@ -32,7 +32,8 @@ Clean repo должен стать местом, где живут:
 После поэтапной миграции сюда должны входить только product-facing и reproducible части:
 
 - versioned WebSocket contract и integration docs;
-- runtime skeleton c явными модулями `api`, `contracts`, `runtime`, `pipelines`, `segmentation` и `inference`;
+- runtime skeleton с явными модулями `api`, `contracts`, `runtime`,
+  `pipelines`, `segmentation` и `inference`;
 - `pose_words` inference path, segmentation runtime и связанная readiness-логика;
 - artifact manifest/load policy для active runtime artifacts;
 - smoke, contract и integration checks;
@@ -136,7 +137,9 @@ tests/
 - `runtime` отвечает за orchestration, session flow и coordination зависимостей;
 - `pipelines` задают composition конкретных recognition paths и не подменяют `segmentation` или `inference`;
 - `segmentation` и `inference` остаются самостоятельными runtime layers;
-- `pose_words` зафиксирован как основной pipeline, `words` допустим только как baseline/reference, `letters` не считается равноправным word-oriented runtime path;
+- `pose_words` зафиксирован как основной pipeline, `words` допустим
+  только как baseline/reference, `letters` не считается равноправным
+  word-oriented runtime path;
 - training/export, dataset tooling, bootstrap/fallback paths и draft-only operational details в runtime skeleton не входят.
 
 Важно: эта структура пока остается **описанием целевого layout**, а не заявлением, что runtime-модули уже перенесены в clean repo.
@@ -186,7 +189,8 @@ Clean repo должен содержать versioned WebSocket contract для s
 
 - `contracts` хранят versioned envelope и payload semantics;
 - `api` реализует transport surface поверх этого контракта;
-- `runtime` и связанные с ним pipeline layers не должны владеть wire-format как внутренней архитектурной моделью.
+- `runtime` и связанные с ним pipeline layers не должны владеть
+  wire-format как внутренней архитектурной моделью.
 
 ### Mock mode
 
