@@ -137,9 +137,9 @@ tests/
 - `runtime` отвечает за orchestration, session flow и coordination зависимостей;
 - `pipelines` задают composition конкретных recognition paths и не подменяют `segmentation` или `inference`;
 - `segmentation` и `inference` остаются самостоятельными runtime layers;
-- `pose_words` зафиксирован как основной pipeline, `words` допустим
-  только как baseline/reference, `letters` не считается равноправным
-  word-oriented runtime path;
+- `pose_words` зафиксирован как основной pipeline;
+- `words` допустим только как baseline/reference;
+- `letters` не считается равноправным word-oriented runtime path;
 - training/export, dataset tooling, bootstrap/fallback paths и draft-only operational details в runtime skeleton не входят.
 
 Важно: эта структура пока остается **описанием целевого layout**, а не заявлением, что runtime-модули уже перенесены в clean repo.
@@ -189,8 +189,8 @@ Clean repo должен содержать versioned WebSocket contract для s
 
 - `contracts` хранят versioned envelope и payload semantics;
 - `api` реализует transport surface поверх этого контракта;
-- `runtime` и связанные с ним pipeline layers не должны владеть
-  wire-format как внутренней архитектурной моделью.
+- `runtime` и связанные с ним pipeline layers не должны владеть wire-format
+  как внутренней архитектурной моделью.
 
 ### Mock mode
 
