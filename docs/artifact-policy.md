@@ -93,7 +93,7 @@ artifacts/
 
 Для `pose_words` contour это означает:
 
-- segmentation artifacts входят в **обязательный active runtime set**, а не в отдельный “вспомогательный хвост”;
+- segmentation artifacts входят в **обязательный active runtime set**, а не в отдельный "вспомогательный хвост";
 - они живут в отдельной subtree `segmentation/`, чтобы ownership `segmentation` не смешивался с classifier files;
 - отсутствие segmentation model или thresholds означает, что `pose_words` live path не готов даже если classifier model присутствует;
 - ART-01 фиксирует только layout/policy для segmentation artifacts, а не переносит сам segmentation runtime code из `PW-02`.
@@ -240,7 +240,7 @@ Primary load path фиксируется так:
 
 1. clean runtime в `live` path обращается только к `artifacts/runtime/active/pose_words/manifest.json`;
 2. все file paths внутри manifest разрешаются **относительно директории manifest**, а не через machine-local absolute paths;
-3. runtime не должен сканировать `artifacts/validation/...` или `artifacts/bootstrap/...` в поисках “лучшего” профиля;
+3. runtime не должен сканировать `artifacts/validation/...` или `artifacts/bootstrap/...` в поисках "лучшего" профиля;
 4. runtime не должен вычислять active profile через draft-only `config.yaml`;
 5. runtime не должен трактовать bootstrap path как default replacement для missing active set.
 
