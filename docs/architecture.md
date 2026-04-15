@@ -212,10 +212,15 @@ Clean repo должен содержать versioned WebSocket contract для s
 
 Clean runtime должен иметь как минимум:
 
-- `/health` для базового статуса сервиса;
-- `/ready` для readiness и проверки критических runtime dependencies;
-- явную индикацию missing artifacts и активного artifact profile;
-- недвусмысленную семантику для integration и smoke automation.
+- `/health` как liveness probe для живости процесса и отображения текущего `runtime_mode`;
+- `/ready` как readiness probe только для `live runtime path`, а не для mock path;
+- readiness gates для `runtime_shell`, `active_artifacts` и `transport_surface`;
+- явное правило, что missing artifacts и service-level `runtime_unavailable` валят readiness, но не подменяют собой liveness;
+- недвусмысленную семантику для integration и smoke automation без притворства, что clean repo уже содержит полный working runtime.
+
+Подробная probe-semantics зафиксирована в [docs/runtime-skeleton.md](runtime-skeleton.md).
+
+При этом RT-02 не фиксирует shape `artifact manifest` или `active artifact profile`: эти детали остаются отдельным scope для `ART-01`.
 
 ### Smoke/integration checks
 
