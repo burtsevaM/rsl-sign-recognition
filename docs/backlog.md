@@ -156,6 +156,7 @@
 - Epic: `Epic D — pose_words inference`
 - Recommended labels: `milestone:m2`, `epic:pose-words`, `area:segmentation`, `type:task`, `priority:P0`, `size:M`, `needs-manual-check`
 - Dependencies: `RT-01`, `PW-01`.
+- Scope doc: [docs/pw-02-segmentation-runtime-scope.md](pw-02-segmentation-runtime-scope.md)
 - Acceptance criteria:
   - [ ] Зафиксированы границы segmentation layer и его зависимости.
   - [ ] Определено, какие части segmentation относятся к runtime, а какие остаются в draft validation/research contour.

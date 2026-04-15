@@ -13,13 +13,18 @@
 
 Документ **не** переносит код и **не** объявляет, что clean repo уже содержит working segmentation runtime.
 
-## 2. Зависимости и архитектурная привязка
+## 2. Зависимости и архитектурный контекст
 
-PW-02 опирается на уже зафиксированные planning-границы:
+PW-02 опирается на уже зафиксированные planning-границы и прямые backlog dependencies:
 
 - `RT-01` задает target layout, в котором `segmentation` отделен от `runtime`, `pipelines` и `inference`;
-- `RT-02` уже формализует `/health` и `/ready`, поэтому PW-02 не описывает readiness как artifact policy или active manifest;
 - `PW-01` фиксирует downstream boundary для `pose_words` classifier wrapper и оставляет `segmentation` отдельным runtime layer.
+
+`RT-02` используется здесь только как **contextual reference** для уже описанных `/health` и `/ready` semantics:
+
+- PW-02 не добавляет `RT-02` в прямые зависимости этой задачи;
+- PW-02 не делает readiness/health hidden gate для подготовки segmentation scope;
+- ссылка на `RT-02` нужна только затем, чтобы не смешивать segmentation migration scope с artifact policy, readiness assembly и probe semantics, которые описываются отдельно.
 
 Следовательно, scope PW-02 ограничен только тем runtime surface, который нужен для:
 
