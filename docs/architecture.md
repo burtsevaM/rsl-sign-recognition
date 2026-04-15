@@ -220,7 +220,7 @@ Clean runtime должен иметь как минимум:
 
 Подробная probe-semantics зафиксирована в [docs/runtime-skeleton.md](runtime-skeleton.md).
 
-При этом RT-02 не фиксирует shape `artifact manifest` или `active artifact profile`: эти детали остаются отдельным scope для `ART-01`.
+Shape `artifact manifest`, active profile markers и clean load path теперь зафиксированы отдельно в [docs/artifact-policy.md](artifact-policy.md) в рамках `ART-01`.
 
 ### Smoke/integration checks
 
@@ -236,4 +236,4 @@ Clean runtime должен иметь как минимум:
 появляться поэтапно через отдельные milestones и issues, а не объявляться
 реализованным заранее.
 
-Draft-only operational details из validation/bootstrap контура сюда не переносятся как уже существующее поведение clean repo. Это относится к локальным install/promote workflow, validation outputs, конкретным активным профилям артефактов и recovery path: на этапе `M0` в clean repo фиксируется только архитектурный принцип, что active runtime artifacts, readiness gates и smoke semantics должны быть отделены от bootstrap и validation context и вводиться через отдельные задачи.
+Draft-only operational details из validation/bootstrap контура сюда не переносятся как уже существующее поведение clean repo. Это относится к локальным install/promote workflow, validation outputs и recovery path. В clean repo policy для active runtime artifacts уже зафиксирована отдельно в [docs/artifact-policy.md](artifact-policy.md): active manifest/load path должен быть self-contained, не зависеть от draft-only `config.yaml` и не трактовать bootstrap contour как primary runtime scenario.
