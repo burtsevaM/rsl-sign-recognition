@@ -14,7 +14,7 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@v4
 
       - name: Verify required foundation files
         shell: bash
@@ -51,22 +51,22 @@ jobs:
         shell: bash
         run: |
           cat <<'EOF'
-          Reserved future CI direction for docs:
-          - richer docs checks can be added later as repository rules appear.
+          Reserved future CI direction:
+          - richer docs checks can be added later as dedicated repository rules appear.
           EOF
 
       - name: Reserved contract checks expansion
         shell: bash
         run: |
           cat <<'EOF'
-          Reserved future CI direction for contracts:
-          - contract checks remain intentionally absent in M0 until the clean repo contains the versioned runtime contract.
+          Reserved future CI direction:
+          - contract checks are intentionally not implemented in M0 because the clean repo does not yet contain the versioned runtime contract.
           EOF
 
       - name: Reserved runtime-surface and smoke expansion
         shell: bash
         run: |
           cat <<'EOF'
-          Reserved future CI direction for runtime surface:
-          - runtime-surface and smoke checks remain intentionally absent in M0 until the clean repo contains a migrated backend runtime.
+          Reserved future CI direction:
+          - runtime-surface and smoke checks are intentionally not implemented in M0 because the clean repo does not yet contain a migrated backend runtime.
           EOF
