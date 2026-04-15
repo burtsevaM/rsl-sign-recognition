@@ -98,7 +98,7 @@ tests/
 - transport-level parsing и protocol error mapping;
 - привязка к versioned contracts;
 - handoff в `runtime`;
-- future handlers для `/health` и `/ready`, когда это будет формализовано отдельной задачей.
+- handlers для `/health` и `/ready` с semantics, зафиксированной в разделе 13 этого документа.
 
 **Что не входит**
 
@@ -323,3 +323,193 @@ Runtime skeleton **не включает**:
 - перенос product code в текущей задаче.
 
 Это означает, что после RT-01 clean repo честно фиксирует будущее устройство runtime surface, но по-прежнему **не делает вид**, что migrated runtime implementation уже существует.
+
+## 13. Semantics для `/health` и `/ready`
+
+RT-02 расширяет RT-01 не новым runtime scope, а **документированной probes-semantics** для будущего runtime shell.
+
+Важно:
+
+- это still docs-first описание для следующего implementation-layer;
+- раздел не объявляет, что clean repo уже содержит working runtime;
+- раздел не меняет `WebSocket contract v1` и не делает `mock mode` частью live runtime behavior;
+- конкретный `artifact manifest`, `active profile` и способ загрузки артефактов остаются scope задачи `ART-01`.
+
+### 13.1. Разделение ролей
+
+Роли probes фиксируются так:
+
+- `/health` отвечает только за **liveness** процесса и базовую доступность runtime shell как HTTP-сервиса;
+- `/ready` отвечает только за **readiness** live runtime path в пределах уже согласованных clean boundaries;
+- положительный `/health` не означает, что live runtime готов, артефакты доступны или `WS /ws/stream` может честно обслуживать live session;
+- mock availability, contract fixtures и integration harness не считаются заменой live readiness.
+
+### 13.2. `/health`: минимальный liveness probe
+
+`/health` нужен для ответа на один вопрос: **жив ли процесс и может ли он ответить как runtime shell service**.
+
+Каноническая semantics:
+
+- успешный ответ: `HTTP 200`;
+- минимально обязательные поля ответа:
+  - `status` — literal `ok`;
+  - `probe` — literal `liveness`;
+  - `runtime_mode` — текущий configured mode (`mock` или `live`);
+- дополнительные поля допустимы только если они остаются liveness-level и не маскируют readiness semantics.
+
+Минимальный shape:
+
+```json
+{
+  "status": "ok",
+  "probe": "liveness",
+  "runtime_mode": "live"
+}
+```
+
+`/health` показывает:
+
+- процесс поднят и HTTP probe surface отвечает;
+- runtime shell запущен как сервисный процесс;
+- какой runtime mode сейчас выбран для этого экземпляра сервиса.
+
+`/health` **не проверяет**:
+
+- загружены ли active artifacts;
+- доступен ли live runtime path для новой session;
+- готов ли `WS /ws/stream` обслуживать live traffic;
+- есть ли runtime-level dependency graph для `pose_words`;
+- можно ли использовать mock path вместо live path.
+
+Следствие:
+
+- missing artifacts не должны переводить `/health` в failed state;
+- отсутствие live runtime readiness не должно подменять собой liveness failure;
+- `/health` не должен притворяться сокращённой версией `/ready`.
+
+### 13.3. `/ready`: readiness probe для live runtime path
+
+`/ready` отвечает на другой вопрос: **готов ли текущий runtime shell обслуживать live runtime path в рамках clean repo boundaries**.
+
+Каноническая semantics:
+
+- успешный ответ возможен только при `HTTP 200`;
+- неуспешный ответ для любого незакрытого gate: `HTTP 503`;
+- `/ready` всегда интерпретируется как readiness именно для `live_runtime_path`, а не для mock fixtures.
+
+Минимальный shape:
+
+```json
+{
+  "status": "ready",
+  "probe": "readiness",
+  "runtime_mode": "live",
+  "ready_for": "live_runtime_path",
+  "gates": {
+    "runtime_shell": true,
+    "active_artifacts": true,
+    "transport_surface": true
+  }
+}
+```
+
+Если хотя бы один gate не закрыт, ответ остаётся тем же по shape, но:
+
+- `status` становится `not_ready`;
+- соответствующие значения в `gates` становятся `false`;
+- реализация может добавить `reason_codes`, но они не должны подменять собой состояние gate-ов.
+
+Обязательные readiness gates:
+
+- `runtime_shell` — live runtime shell выбран, собран и не находится в заведомо unavailable startup-state;
+- `active_artifacts` — для live path доступны все активные runtime artifacts, которые требуются выбранному pipeline;
+- `transport_surface` — live transport surface поднят и связан с runtime shell так, чтобы `WS /ws/stream` обслуживал именно live path, а не mock substitute.
+
+### 13.4. Правила для readiness gates
+
+#### `runtime_shell`
+
+Gate закрыт только если:
+
+- сервис находится в `live` mode;
+- runtime shell и его runtime-facing зависимости инициализированы до состояния, в котором можно принять новую live session;
+- нет известной глобальной причины, из-за которой новая live session заранее обречена на `runtime_unavailable`.
+
+Gate не закрыт, если:
+
+- экземпляр запущен в `mock` mode;
+- live runtime shell не собран или не активирован;
+- есть startup/runtime-level failure, из-за которой сервис заранее знает, что live path недоступен.
+
+#### `active_artifacts`
+
+Gate закрыт только если обязательные для live path active artifacts:
+
+- определены для текущего runtime increment;
+- действительно доступны runtime shell;
+- могут быть использованы без обращения к draft-only bootstrap/fallback path.
+
+RT-02 не фиксирует shape manifest или profile naming. Это будет scope `ART-01`.
+
+Но RT-02 фиксирует rule:
+
+- missing artifacts всегда означают `active_artifacts = false` и `HTTP 503` на `/ready`;
+- missing artifacts не должны ломать `/health`.
+
+#### `transport_surface`
+
+Gate закрыт только если live runtime path выставляет документированную transport surface:
+
+- HTTP probes доступны как service-level surface;
+- `WS /ws/stream` поднят как live transport endpoint;
+- integration boundary не подменяет live path mock fixtures.
+
+Gate не закрыт, если:
+
+- transport поднят только для mock/integration harness;
+- live WebSocket surface не связан с runtime shell;
+- сервис отвечает на `/health`, но не способен принять live runtime traffic.
+
+### 13.5. Missing artifacts и `runtime_unavailable`
+
+`missing artifacts` и `runtime_unavailable` фиксируются как разные, но связанные ситуации.
+
+`missing artifacts`:
+
+- это причина readiness failure;
+- влияет на `/ready`, а не на `/health`;
+- означает, что live runtime path нельзя считать готовым даже если процесс жив.
+
+`runtime_unavailable`:
+
+- в контексте `CTR-01` / `CTR-02` остаётся session-level error code `runtime_unavailable` внутри WebSocket contract;
+- не заменяет `/ready` и не становится transport-level shortcut для probe semantics;
+- должен интерпретироваться как error текущей session, если недоступность проявилась уже после того, как сервис был готов принимать session.
+
+Если причина известна заранее и затрагивает сервис целиком, semantics такие:
+
+- `/ready` уже должен возвращать `HTTP 503`;
+- соответствующий gate должен быть `false`;
+- реализация может использовать `runtime_unavailable` в `reason_codes`, но readiness failure должна быть видна именно через `/ready`.
+
+Иначе говоря:
+
+- `/ready` — pre-session truth про готовность live path;
+- `runtime_unavailable` — session/runtime-level signal внутри уже выбранного live path;
+- эти сигналы не должны подменять друг друга.
+
+### 13.6. Mock/live boundary и integration smoke
+
+Связь с `CTR-02` фиксируется так:
+
+- `mock mode` остаётся внешним integration choice и не превращается в разновидность live readiness;
+- `/health` обязан показывать текущий `runtime_mode`, чтобы integration layer видел, находится ли сервис в `mock` или `live`;
+- `/ready` в `mock` mode не должен возвращать `ready = true` для `live_runtime_path`, даже если mock fixtures доступны и smoke-checks проходят;
+- mock-based smoke используют `CTR-02` fixtures и contract checks, а не считают успешный mock run доказательством live readiness;
+- live smoke могут трактовать связку `/health = 200` и `/ready = 200` как минимальную предпосылку для начала runtime-facing checks, но не как доказательство production-hardening.
+
+Это и есть честная clean boundary:
+
+- `mock` помогает web team и smoke automation до появления live runtime surface;
+- `live readiness` начинается только там, где закрыты `runtime_shell`, `active_artifacts` и `transport_surface`;
+- ни одна из этих формулировок не означает, что полный working runtime уже перенесён в clean repo.
