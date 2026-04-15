@@ -66,7 +66,6 @@
 - [docs/architecture.md](docs/architecture.md) — назначение clean repo, целевая архитектура и границы миграции
 - [docs/runtime-skeleton.md](docs/runtime-skeleton.md) — target module structure
   и границы runtime skeleton для clean repo
-- [docs/artifact-policy.md](docs/artifact-policy.md) — target policy для active runtime artifact manifest, profiles и clean load path
 - [docs/contracts/websocket-contract-v1.md](docs/contracts/websocket-contract-v1.md) — versioned WebSocket contract v1 для sign-to-text runtime
 - [docs/contracts/mock-protocol-mode.md](docs/contracts/mock-protocol-mode.md) — mock protocol mode поверх contract v1 для web team и smoke-checks без live runtime
 - [docs/roadmap.md](docs/roadmap.md) — milestones `M0`-`M3`, зависимости и критерии завершения
