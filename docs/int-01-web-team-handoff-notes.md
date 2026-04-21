@@ -9,13 +9,13 @@
 Документ покрывает:
 
 - на какие уже зафиксированные документы и semantics web team может опираться;
-- где проходит граница между `mock path` и ожиданиями от будущего `live runtime path`;
+- где проходит граница между `mock path` и ожиданиями от live runtime path после RT-03;
 - как трактовать `/health`, `/ready` и `WS /ws/stream` на текущем этапе;
-- какие ограничения у handoff-контура остаются до первого working runtime increment.
+- какие ограничения у handoff-контура остаются после первого minimal runtime increment.
 
 Документ **не** покрывает:
 
-- реализацию runtime;
+- полный runtime beyond минимального shell-level implementation;
 - реальный совместный integration run;
 - production-ready handoff;
 - изменение `contract v1`;
@@ -23,13 +23,13 @@
 
 ## 2. Текущее состояние integration-ready контура
 
-На текущем этапе clean repo фиксирует **docs-first integration surface**, а не рабочий production-like runtime.
+На текущем этапе clean repo уже содержит **minimal runtime shell** для probe-level integration surface, но все еще не содержит working production-like runtime.
 
 Уже зафиксировано и доступно как source context для web team:
 
 - [docs/contracts/websocket-contract-v1.md](contracts/websocket-contract-v1.md) - канонический `WebSocket contract v1`;
 - [docs/contracts/mock-protocol-mode.md](contracts/mock-protocol-mode.md) - отдельный `mock protocol mode` поверх того же контракта;
-- [docs/runtime-skeleton.md](runtime-skeleton.md) - semantics `/health` и `/ready` для будущего runtime shell;
+- [docs/runtime-skeleton.md](runtime-skeleton.md) - semantics `/health` и `/ready` для текущего минимального runtime shell и следующих increments;
 - [docs/artifact-policy.md](artifact-policy.md) - readiness expectations для active artifacts;
 - [docs/qa-01-smoke-test-strategy.md](qa-01-smoke-test-strategy.md) - минимальные smoke/manual expectations.
 
@@ -37,15 +37,16 @@
 
 - stable JSON envelope и stable поля `contract v1`;
 - documented mock path для UI/integration parsing без live runtime;
+- working `/health` и `/ready` surface на minimal FastAPI shell;
 - честное разделение liveness и readiness;
 - минимальные expectations для future smoke и manual integration checks.
 
 Пока **нельзя** считать готовым:
 
-- рабочий live runtime в clean repo;
+- рабочий live runtime в clean repo beyond minimal shell;
 - production-grade readiness contour;
 - доказанную доступность `WS /ws/stream` как live transport surface;
-- наличие active artifacts и working runtime shell;
+- наличие active artifacts и live-ready runtime shell;
 - end-to-end handoff beyond documented surface.
 
 ## 3. Contract Version
@@ -144,7 +145,7 @@ Source of truth для `contract v1`:
 - полноту runtime surface beyond documented increment;
 - readiness для `mock path`.
 
-Ключевая граница: readiness integration surface не равна production readiness. Даже документированные `/health` и `/ready` остаются semantics для будущего runtime shell, пока implementation-layer еще не перенесен.
+Ключевая граница: readiness integration surface не равна production readiness. Даже после появления минимального runtime shell `/health` и `/ready` не означают, что clean repo уже получил полный live runtime contour.
 
 ## 6. Точки соприкосновения с web team
 
@@ -223,11 +224,11 @@ Source of truth для `contract v1`:
 
 Текущий handoff намеренно ограничен:
 
-- это минимальный docs-first package, а не working runtime handoff;
+- это минимальный handoff package с working probe-level shell, а не full runtime handoff;
 - clean repo не делает claims о production-grade runtime;
 - mock checks и fixtures не заменяют live runtime path;
 - smoke/manual expectations пока описаны как strategy, а не как полностью реализованный test contour;
-- readiness semantics документированы честно, но не подтверждены working implementation layer в clean repo;
+- readiness semantics документированы честно и подтверждены minimal implementation layer, но не подтверждают full live runtime path;
 - нельзя делать вывод о полноте runtime surface сверх того, что прямо описано в `contract v1`, `RT-02`, `ART-01` и `QA-01`;
 - handoff не должен трактоваться как сигнал, что web team уже может полагаться на full live backend parity.
 

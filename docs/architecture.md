@@ -4,14 +4,14 @@
 
 `rsl-sign-recognition` создается как clean repository для воспроизводимого product-oriented ML runtime распознавания РЖЯ в сценарии sign-to-text.
 
-На foundation-этапе этот репозиторий намеренно содержит только:
+На раннем этапе этот репозиторий намеренно содержал только:
 
 - process documentation;
 - архитектурные договоренности;
 - roadmap и backlog;
 - GitHub templates для issue-based разработки.
 
-Это не описание уже перенесенного runtime. Это описание целевого clean contour и правил его поэтапной сборки.
+RT-03 добавил в clean repo только минимальный FastAPI runtime shell. Это по-прежнему не описание полного перенесенного runtime, а описание целевого clean contour и правил его поэтапной сборки.
 
 ## 2. Роль clean repo в общей системе
 
@@ -39,7 +39,7 @@ Clean repo должен стать местом, где живут:
 - smoke, contract и integration checks;
 - handoff-документация для web/integration команды.
 
-На текущем этапе фактически присутствуют только foundation docs и process assets.
+На текущем этапе фактически присутствуют foundation docs, process assets и минимальный probe-level runtime shell без inference, segmentation и live transport implementation.
 
 ## 4. Что сюда не входит
 
@@ -142,7 +142,7 @@ tests/
 - `letters` не считается равноправным word-oriented runtime path;
 - training/export, dataset tooling, bootstrap/fallback paths и draft-only operational details в runtime skeleton не входят.
 
-Важно: эта структура пока остается **описанием целевого layout**, а не заявлением, что runtime-модули уже перенесены в clean repo.
+Важно: эта структура по-прежнему остается **описанием целевого layout**. RT-03 переносит только минимальные модули для FastAPI shell, `/health`, `/ready` и readiness boundaries, а не весь runtime contour.
 
 ## 9. Приоритеты migration
 
