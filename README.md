@@ -107,7 +107,8 @@
 - не поднимает live `WS /ws/stream`;
 - не загружает `pose_words`, `words` или `letters`;
 - не реализует inference, segmentation, training/export или draft-only fallback logic;
-- не объявляет `/ready = 200`, пока не закрыты `runtime_shell`, `active_artifacts` и `transport_surface`.
+- не объявляет `/ready = 200`, пока не закрыты `runtime_shell`, `active_artifacts` и `transport_surface`;
+- в рамках RT-03 не может честно стать fully ready для `live_runtime_path`, потому что live transport surface еще не перенесен.
 
 Пример локального запуска:
 
@@ -117,8 +118,8 @@ python3 -m uvicorn rsl_sign_recognition.asgi:app --app-dir src
 
 ## Foundation CI
 
-`Foundation CI` запускается на `push` и `pull_request` и сейчас проверяет только foundation-level контур репозитория: наличие ключевых root docs, process templates и самого workflow-файла.
+`Foundation CI` запускается на `push` и `pull_request` и сейчас проверяет foundation-level контур репозитория, а также минимальный runtime shell contour: наличие ключевых root docs, process templates, самого workflow-файла, `compileall` для `src/tests` и `pytest` для shell-level тестов.
 
-Этот workflow намеренно не запускает contract checks, runtime smoke, artifact/config validation или backend tests. Такие направления будут добавляться поэтапно отдельными задачами, когда в clean repo действительно появятся соответствующие contract и runtime surface.
+Этот workflow по-прежнему намеренно не запускает contract checks, live WebSocket smoke, artifact/config validation или backend tests beyond shell-level probes. Такие направления будут добавляться поэтапно отдельными задачами, когда в clean repo действительно появятся соответствующие contract и runtime surface.
 
 Итоговая идея проста: `rsl-sign-recognition` — это clean repo для воспроизводимого product-oriented ML runtime, а `gesture-recognition-draft` остается исследовательским и переходным контуром до поэтапной миграции.

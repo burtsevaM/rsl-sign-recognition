@@ -17,7 +17,6 @@ def build_settings(tmp_path: Path, *, runtime_mode: RuntimeMode = RuntimeMode.LI
         runtime_mode=runtime_mode,
         repo_root=tmp_path,
         active_manifest_path=tmp_path / "artifacts/runtime/active/pose_words/manifest.json",
-        live_transport_enabled=False,
     )
 
 
@@ -25,15 +24,13 @@ def build_client(
     tmp_path: Path,
     *,
     runtime_mode: RuntimeMode = RuntimeMode.LIVE,
-    live_transport_enabled: bool = False,
+    transport_surface: LiveTransportSurface | None = None,
 ) -> TestClient:
     settings = build_settings(tmp_path, runtime_mode=runtime_mode)
     services = RuntimeServiceRegistry.build(
         settings,
-        transport_surface=LiveTransportSurface(
-            ws_stream_path=settings.ws_stream_path,
-            live_transport_enabled=live_transport_enabled,
-        ),
+        transport_surface=transport_surface
+        or LiveTransportSurface(ws_stream_path=settings.ws_stream_path),
     )
     app = create_app(settings=settings, services=services)
     return TestClient(app)
@@ -104,44 +101,59 @@ def test_ready_is_not_ready_without_manifest_and_live_ws(tmp_path: Path) -> None
         },
         "reason_codes": [
             "active_manifest_missing",
-            "ws_stream_route_missing",
+            "live_ws_stream_not_implemented",
         ],
     }
 
 
-def test_ready_stays_not_ready_in_mock_mode(tmp_path: Path) -> None:
+def test_ready_stays_not_ready_when_manifest_exists_but_live_transport_is_missing(
+    tmp_path: Path,
+) -> None:
     write_active_manifest(tmp_path)
 
-    with build_client(
-        tmp_path,
-        runtime_mode=RuntimeMode.MOCK,
-        live_transport_enabled=True,
-    ) as client:
+    with build_client(tmp_path) as client:
         response = client.get("/ready")
 
     assert response.status_code == 503
-    assert response.json()["gates"]["runtime_shell"] is False
-    assert response.json()["reason_codes"] == ["runtime_mode_not_live"]
-
-
-def test_ready_returns_200_when_all_live_gates_are_closed(tmp_path: Path) -> None:
-    write_active_manifest(tmp_path)
-
-    with build_client(tmp_path, live_transport_enabled=True) as client:
-        response = client.get("/ready")
-
-    assert response.status_code == 200
     assert response.json() == {
-        "status": "ready",
+        "status": "not_ready",
         "probe": "readiness",
         "runtime_mode": "live",
         "ready_for": "live_runtime_path",
         "gates": {
             "runtime_shell": True,
             "active_artifacts": True,
-            "transport_surface": True,
+            "transport_surface": False,
         },
+        "reason_codes": ["live_ws_stream_not_implemented"],
     }
+
+
+def test_ready_stays_not_ready_in_mock_mode(tmp_path: Path) -> None:
+    write_active_manifest(tmp_path)
+
+    with build_client(tmp_path, runtime_mode=RuntimeMode.MOCK) as client:
+        response = client.get("/ready")
+
+    assert response.status_code == 503
+    assert response.json()["gates"] == {
+        "runtime_shell": False,
+        "active_artifacts": True,
+        "transport_surface": False,
+    }
+    assert response.json()["reason_codes"] == [
+        "runtime_mode_not_live",
+        "live_ws_stream_not_implemented",
+    ]
+
+
+def test_transport_surface_cannot_become_ready_from_test_side_only() -> None:
+    transport_surface = LiveTransportSurface(ws_stream_path="/ws/stream")
+
+    assert transport_surface.evaluate().passed is False
+    assert transport_surface.evaluate().reason_codes == (
+        "live_ws_stream_not_implemented",
+    )
 
 
 def test_asgi_entrypoint_exposes_fastapi_app() -> None:

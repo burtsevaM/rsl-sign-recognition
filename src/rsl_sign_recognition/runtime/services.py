@@ -38,10 +38,7 @@ class RuntimeServiceRegistry:
             settings=settings,
             artifact_gate=artifact_gate or ActiveArtifactGate(settings.active_manifest_path),
             transport_surface=transport_surface
-            or LiveTransportSurface(
-                ws_stream_path=settings.ws_stream_path,
-                live_transport_enabled=settings.live_transport_enabled,
-            ),
+            or LiveTransportSurface(ws_stream_path=settings.ws_stream_path),
             runtime_hooks=tuple(runtime_hooks or ()),
         )
 

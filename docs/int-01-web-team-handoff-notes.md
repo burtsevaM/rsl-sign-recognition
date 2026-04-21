@@ -167,7 +167,7 @@ Source of truth для `contract v1`:
 
 Что пока ограничено:
 
-- endpoint описан на уровне semantics, а не как уже реализованная live surface;
+- endpoint уже реализован как minimal probe-level surface, но не является признаком live runtime readiness;
 - `/health` не говорит ничего о готовности artifacts или WebSocket transport.
 
 ### `/ready`
@@ -191,7 +191,7 @@ Source of truth для `contract v1`:
 Что пока ограничено или зависит от следующих increment'ов:
 
 - реальная materialization active artifacts;
-- рабочий readiness assembly в коде;
+- readiness для `live_runtime_path` по-прежнему остается `503`, пока в clean repo нет реального live `WS /ws/stream`;
 - подтверждение gate-ов на живом runtime shell.
 
 ### `WS /ws/stream`

@@ -12,13 +12,9 @@ class LiveTransportSurface:
     """Future boundary for the live WebSocket transport surface."""
 
     ws_stream_path: str = "/ws/stream"
-    live_transport_enabled: bool = False
 
     def evaluate(self) -> GateStatus:
-        if self.live_transport_enabled:
-            return GateStatus(passed=True)
-
         return GateStatus(
             passed=False,
-            reason_codes=("ws_stream_route_missing",),
+            reason_codes=("live_ws_stream_not_implemented",),
         )

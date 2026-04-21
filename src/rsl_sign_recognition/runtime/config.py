@@ -2,22 +2,15 @@
 
 from __future__ import annotations
 
-import os
 from dataclasses import dataclass
 from enum import Enum
 from pathlib import Path
+import os
 
 
 class RuntimeMode(str, Enum):
     LIVE = "live"
     MOCK = "mock"
-
-
-def _env_flag(name: str, default: bool) -> bool:
-    raw_value = os.getenv(name)
-    if raw_value is None:
-        return default
-    return raw_value.strip().lower() in {"1", "true", "yes", "on"}
 
 
 @dataclass(frozen=True)
@@ -26,7 +19,6 @@ class RuntimeShellSettings:
     repo_root: Path
     active_manifest_path: Path
     ws_stream_path: str = "/ws/stream"
-    live_transport_enabled: bool = False
 
     @classmethod
     def from_env(cls) -> "RuntimeShellSettings":
@@ -50,5 +42,4 @@ class RuntimeShellSettings:
             repo_root=repo_root,
             active_manifest_path=manifest_setting,
             ws_stream_path=os.getenv("RSL_WS_STREAM_PATH", "/ws/stream"),
-            live_transport_enabled=_env_flag("RSL_ENABLE_LIVE_WS", False),
         )
