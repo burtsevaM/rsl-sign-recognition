@@ -60,7 +60,7 @@ Source of truth для `contract v1`:
 
 Для web team это означает:
 
-- ориентироваться нужно на `contract_version` из документированного `1.x` контура;
+- ориентироваться нужно на `contract_version` в рамках документированной линии `v1` (`1.x`);
 - stable minimum surface определяется именно документом `websocket-contract-v1.md`, а не draft runtime payload;
 - `mock mode` не создает отдельный контракт и не меняет смысл `v1`, а использует его поверх внешней integration boundary.
 
@@ -98,7 +98,7 @@ Source of truth для `contract v1`:
 Допустимо ожидать сейчас:
 
 - совместимость mock fixtures со stable surface `contract v1`;
-- documented parsing rules для `1.x`;
+- documented parsing rules для `v1` и совместимых `1.x`-расширений;
 - documented semantics для `/health` и `/ready`.
 
 Преждевременно ожидать сейчас:
@@ -243,7 +243,7 @@ Source of truth для `contract v1`:
 
 - корректный разбор `recognition.result`, `control.ack`, `error` по stable surface;
 - работу UI/integration logic с `HOLD`, `COMMIT`, `clear_text` и `runtime_unavailable` через mock fixtures;
-- tolerant behavior к отсутствию optional debug/runtime blocks и к additive полям в `1.x`.
+- tolerant behavior к отсутствию optional debug/runtime blocks и к additive полям в совместимой линии `v1` (`1.x`).
 
 Что пока остается предметом следующего working increment:
 
