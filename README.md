@@ -67,6 +67,7 @@
 - [docs/runtime-skeleton.md](docs/runtime-skeleton.md) — target module structure
   и границы runtime skeleton для clean repo
 - [docs/artifact-policy.md](docs/artifact-policy.md) — target policy для active runtime artifact manifest, profiles и clean load path
+- [docs/qa-01-smoke-test-strategy.md](docs/qa-01-smoke-test-strategy.md) — минимальная smoke test strategy для contract, mock, backend smoke и manual checks
 - [docs/contracts/websocket-contract-v1.md](docs/contracts/websocket-contract-v1.md) — versioned WebSocket contract v1 для sign-to-text runtime
 - [docs/contracts/mock-protocol-mode.md](docs/contracts/mock-protocol-mode.md) — mock protocol mode поверх contract v1 для web team и smoke-checks без live runtime
 - [docs/roadmap.md](docs/roadmap.md) — milestones `M0`-`M3`, зависимости и критерии завершения
