@@ -326,11 +326,11 @@ Runtime skeleton **не включает**:
 
 ## 13. Semantics для `/health` и `/ready`
 
-RT-02 расширяет RT-01 не новым runtime scope, а **документированной probes-semantics** для будущего runtime shell.
+RT-02 расширяет RT-01 не новым runtime scope, а **документированной probes-semantics** для runtime shell, который затем был минимально реализован в RT-03.
 
 Важно:
 
-- это still docs-first описание для следующего implementation-layer;
+- раздел остается source of truth для implementation-layer и следующих runtime increments;
 - раздел не объявляет, что clean repo уже содержит working runtime;
 - раздел не меняет `WebSocket contract v1` и не делает `mock mode` частью live runtime behavior;
 - конкретный `artifact manifest`, active profile markers и primary load path зафиксированы отдельно в [docs/artifact-policy.md](artifact-policy.md) как scope `ART-01`.

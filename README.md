@@ -2,7 +2,7 @@
 
 `rsl-sign-recognition` — clean repository для ML-модуля распознавания РЖЯ в сценарии sign-to-text. Его задача — стать местом для воспроизводимого runtime-контура, интеграционного контракта, runtime-facing документации и поэтапной миграции из draft-репозитория в более чистую долгоживущую структуру.
 
-На foundation-этапе этот репозиторий намеренно содержит только документацию, process assets и GitHub templates. Продуктовый runtime-код, backend wiring, модели, артефакты, конфиги и operational scripts сюда еще не перенесены.
+На текущем этапе репозиторий уже содержит **минимальный FastAPI runtime shell** для `/health` и `/ready`, но по-прежнему не содержит перенесенного inference/runtime-контура, активных артефактов, live `WS /ws/stream`, моделей, training/export-кода и operational scripts.
 
 ## Что это за репозиторий
 
@@ -25,12 +25,13 @@
 - policy для active runtime artifacts, readiness и smoke/integration checks;
 - handoff-документация и reproducible process для дальнейшей миграции.
 
-На текущем foundation-этапе здесь уже есть:
+На текущем этапе здесь уже есть:
 
 - `README.md`;
 - `CONTRIBUTING.md`;
 - архитектурная, roadmap и backlog-документация;
-- зафиксированные docs-only границы runtime skeleton без migrated runtime implementation;
+- зафиксированные границы runtime skeleton и минимальный FastAPI runtime shell;
+- app factory и ASGI entrypoint для probe-level runtime surface;
 - foundation CI skeleton для `push` и `pull_request`;
 - PR template и issue templates;
 - каноническая система milestones, epics, labels и task-кодов.
@@ -80,7 +81,7 @@
 - Перенос из draft repo идет не массовым копированием, а через milestones, epics и отдельные issues.
 - Любой перенос кода, документации или контрактов из `gesture-recognition-draft` должен иметь явную задачу, scope и acceptance criteria.
 - Изменения архитектуры, интеграционного контракта или artifact policy должны сопровождаться обновлением документации в том же PR.
-- Пока не начаты отдельные migration tasks, этот репозиторий остается foundation-скелетом без продуктового runtime-кода.
+- Даже после RT-03 этот репозиторий остается честным минимальным runtime shell, а не полным working ML runtime.
 
 Следующие шаги уже зафиксированы в backlog как issue-scoped migration path, а не как массовый перенос файлов:
 
@@ -90,16 +91,35 @@
 - `ART-01` — active artifact manifest/load path;
 - `QA-01` и `INT-01` — smoke/integration strategy и handoff notes.
 
-При этом текущий docs-only этап переносит только product-runtime-oriented
-формулировки и архитектурные договоренности. Validation workflows,
-bootstrap/fallback path, локальные active artifact profiles и machine-local
-operational runbooks остаются в `gesture-recognition-draft` до отдельных
-migration tasks.
+Текущий implementation increment переносит только минимальный probe-level shell. Validation workflows, bootstrap/fallback path, локальные active artifact profiles и machine-local operational runbooks остаются в `gesture-recognition-draft` до отдельных migration tasks.
+
+## Minimal Runtime Shell
+
+В clean repo теперь есть минимальный FastAPI runtime shell:
+
+- app factory: `rsl_sign_recognition.create_app()`;
+- ASGI entrypoint: `rsl_sign_recognition.asgi:app`;
+- probes: `/health` и `/ready`;
+- явные integration boundaries для future runtime services, artifact gates и live transport surface.
+
+Что этот shell **не** делает:
+
+- не поднимает live `WS /ws/stream`;
+- не загружает `pose_words`, `words` или `letters`;
+- не реализует inference, segmentation, training/export или draft-only fallback logic;
+- не объявляет `/ready = 200`, пока не закрыты `runtime_shell`, `active_artifacts` и `transport_surface`;
+- в рамках RT-03 не может честно стать fully ready для `live_runtime_path`, потому что live transport surface еще не перенесен.
+
+Пример локального запуска:
+
+```bash
+python3 -m uvicorn rsl_sign_recognition.asgi:app --app-dir src
+```
 
 ## Foundation CI
 
-`Foundation CI` запускается на `push` и `pull_request` и сейчас проверяет только foundation-level контур репозитория: наличие ключевых root docs, process templates и самого workflow-файла.
+`Foundation CI` запускается на `push` и `pull_request` и сейчас проверяет foundation-level контур репозитория, а также минимальный runtime shell contour: наличие ключевых root docs, process templates, самого workflow-файла, `compileall` для `src/tests` и `pytest` для shell-level тестов.
 
-Этот workflow намеренно не запускает contract checks, runtime smoke, artifact/config validation или backend tests. Такие направления будут добавляться поэтапно отдельными задачами, когда в clean repo действительно появятся соответствующие contract и runtime surface.
+Этот workflow по-прежнему намеренно не запускает contract checks, live WebSocket smoke, artifact/config validation или backend tests beyond shell-level probes. Такие направления будут добавляться поэтапно отдельными задачами, когда в clean repo действительно появятся соответствующие contract и runtime surface.
 
 Итоговая идея проста: `rsl-sign-recognition` — это clean repo для воспроизводимого product-oriented ML runtime, а `gesture-recognition-draft` остается исследовательским и переходным контуром до поэтапной миграции.

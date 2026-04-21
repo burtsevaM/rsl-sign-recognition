@@ -243,9 +243,9 @@ Backend smoke обязан явно разводить:
 - подтверждение, что `runtime_unavailable` не подменяет `/ready`, если проблема известна заранее на уровне сервиса;
 - проверка, что live session после успешного readiness использует именно active runtime path, а не hidden fallback.
 
-### 7.3. Manual checks на текущем docs-first этапе
+### 7.3. Manual checks на текущем minimal-runtime этапе
 
-Пока clean repo еще не содержит migrated runtime implementation, честно manual остаются:
+Даже после появления минимального FastAPI runtime shell честно manual остаются:
 
 - end-to-end подтверждение live path поверх реальных active artifacts;
 - проверка, что `WS /ws/stream` реально обслуживает live traffic, а не только mock/integration harness;

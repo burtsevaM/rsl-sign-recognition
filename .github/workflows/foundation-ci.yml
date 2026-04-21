@@ -60,13 +60,37 @@ jobs:
         run: |
           cat <<'EOF'
           Reserved future CI direction:
-          - contract checks are intentionally not implemented in M0 because the clean repo does not yet contain the versioned runtime contract.
+          - contract checks remain a separate direction; this workflow only covers foundation files and minimal runtime-shell checks.
           EOF
 
-      - name: Reserved runtime-surface and smoke expansion
+  runtime-shell-checks:
+    name: Runtime Shell Checks
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install runtime shell dependencies
         shell: bash
         run: |
-          cat <<'EOF'
-          Reserved future CI direction:
-          - runtime-surface and smoke checks are intentionally not implemented in M0 because the clean repo does not yet contain a migrated backend runtime.
-          EOF
+          set -euo pipefail
+          python -m pip install --upgrade pip
+          python -m pip install -e '.[dev]'
+
+      - name: Compile runtime shell sources
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m compileall src tests
+
+      - name: Run runtime shell tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          pytest -q
