@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import pytest
 from fastapi.testclient import TestClient
 
 from rsl_sign_recognition.api.factory import create_app
@@ -76,6 +77,71 @@ def test_control_clear_text_returns_ack(tmp_path: Path) -> None:
             }
 
 
+@pytest.mark.parametrize(
+    "payload",
+    [
+        {"action": "clear_text"},
+        {"unexpected": True},
+    ],
+)
+def test_control_clear_text_rejects_non_empty_payload(
+    tmp_path: Path,
+    payload: dict[str, object],
+) -> None:
+    with build_client(tmp_path) as client:
+        with client.websocket_connect("/ws/stream") as websocket:
+            websocket.send_json(
+                {
+                    "type": "control.clear_text",
+                    "contract_version": "1.0",
+                    "payload": payload,
+                }
+            )
+
+            response = websocket.receive_json()
+
+    assert response != {
+        "type": "control.ack",
+        "contract_version": "1.0",
+        "payload": {
+            "action": "clear_text",
+            "accepted": True,
+        },
+    }
+    assert response == error_payload(
+        "unsupported_control_action",
+        recoverable=True,
+    )
+
+
+@pytest.mark.parametrize(
+    "message",
+    [
+        {
+            "type": "control.clear_text",
+            "contract_version": "1.0",
+        },
+        {
+            "type": "control.clear_text",
+            "contract_version": "1.0",
+            "payload": None,
+        },
+    ],
+)
+def test_control_clear_text_rejects_missing_or_non_object_payload(
+    tmp_path: Path,
+    message: dict[str, object],
+) -> None:
+    with build_client(tmp_path) as client:
+        with client.websocket_connect("/ws/stream") as websocket:
+            websocket.send_json(message)
+
+            assert websocket.receive_json() == error_payload(
+                "unsupported_control_action",
+                recoverable=True,
+            )
+
+
 def test_invalid_json_returns_recoverable_error(tmp_path: Path) -> None:
     with build_client(tmp_path) as client:
         with client.websocket_connect("/ws/stream") as websocket:
@@ -133,7 +199,7 @@ def test_clear_text_requires_empty_payload(tmp_path: Path) -> None:
             )
 
             assert websocket.receive_json() == error_payload(
-                "unsupported_message_type",
+                "unsupported_control_action",
                 recoverable=True,
             )
 

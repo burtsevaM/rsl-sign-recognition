@@ -65,7 +65,7 @@ def response_for_client_text(raw_message: str) -> dict[str, object]:
 
     if message_type == "control.clear_text":
         if payload != {}:
-            return unsupported_message_type_error()
+            return unsupported_control_action_error()
         return control_ack("clear_text")
 
     if isinstance(message_type, str) and message_type.startswith("control."):
