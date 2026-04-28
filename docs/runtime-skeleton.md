@@ -468,6 +468,7 @@ Gate не закрыт, если:
 
 - transport поднят только для mock/integration harness;
 - live WebSocket surface не связан с runtime shell;
+- WebSocket endpoint принимает transport-level сообщения, но inference/runtime pipeline еще отсутствует;
 - сервис отвечает на `/health`, но не способен принять live runtime traffic.
 
 ### 13.5. Missing artifacts и `runtime_unavailable`
