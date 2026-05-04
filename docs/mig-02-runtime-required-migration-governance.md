@@ -117,7 +117,7 @@ Clean target modules for the implementation issue:
 
 Allowed interaction boundary:
 
-- `api` / RT-04 supplies decoded transport input, not ML logic;
+- `api` / RT-04 supplies the transport-level frame/control handoff; `PW-05` must explicitly define the decode-to-RGB / pose input boundary without adding ML logic to API;
 - `PW-05` emits validated `float32` feature vectors and pose debug objects;
 - `PW-04` consumes feature stream for segmentation;
 - `PW-03` consumes prepared feature clips/spans, not raw frames.
