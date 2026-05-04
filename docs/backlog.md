@@ -192,6 +192,21 @@
 
 #### Epic G — Handoff & migration
 
+##### [MIG-02] Зафиксировать controlled migration governance для runtime-required модулей
+
+- Summary: зафиксировать source-to-target mapping, exclusions, guardrails и manual checks для будущих runtime migration issues без переноса runtime-кода.
+- Milestone: `M2 — Integration-ready sign-to-text MVP`
+- Epic: `Epic G — Handoff & migration`
+- Recommended labels: `milestone:m2`, `epic:migration`, `area:integration`, `type:task`, `priority:P0`, `size:M`, `needs-manual-check`
+- Dependencies: `PW-01`, `PW-02`, `ART-01`, `RT-04`.
+- Scope doc: [docs/mig-02-runtime-required-migration-governance.md](mig-02-runtime-required-migration-governance.md)
+- Follow-up task directions: `PW-05`, `PW-03`, `PW-04`, `ART-02`.
+- Acceptance criteria:
+  - [ ] Есть source-to-target mapping для `PW-05`, `PW-03`, `PW-04` и `ART-02`.
+  - [ ] Явно перечислены excluded draft areas: `words`, `letters`, training/export, validation runners, dataset prep, synthetic dataset logic, frontend/offline helpers, bootstrap-only paths, operational scripts, metrics-only helpers и unrelated draft glue.
+  - [ ] Описаны guardrails против массового копирования `backend/app`, `main.py`, `pose/`, `segmentation/`, `pose_words/`, draft `config.yaml` и validation/bootstrap artifacts.
+  - [ ] Описаны manual migration checks и hidden dependency rule для future implementation PR.
+
 ##### [INT-01] Подготовить handoff notes для web team
 
 - Summary: оформить минимальный handoff package для интеграции clean runtime с веб-командой.

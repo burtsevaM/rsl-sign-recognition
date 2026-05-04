@@ -151,9 +151,10 @@ tests/
 1. Зафиксировать integration contract, mock mode и runtime boundaries.
 2. Собрать runtime skeleton с `/health` и `/ready`.
 3. Подготовить перенос `pose_words` wrappers и segmentation runtime.
-4. Выделить active artifact manifest/load path без переноса лишних validation/bootstrap outputs.
-5. Добавить smoke, contract и integration checks.
-6. Подготовить handoff notes и минимально необходимую docs migration.
+4. Зафиксировать controlled migration governance для runtime-required модулей, чтобы `PW-05`, `PW-03`, `PW-04` и `ART-02` не превратились в массовое копирование draft repo.
+5. Выделить active artifact manifest/load path без переноса лишних validation/bootstrap outputs.
+6. Добавить smoke, contract и integration checks.
+7. Подготовить handoff notes и минимально необходимую docs migration.
 
 Что не переносится на раннем этапе:
 
@@ -170,6 +171,7 @@ tests/
 - `RT-01` и `RT-02` — runtime skeleton и health/readiness semantics;
 - `PW-01` и `PW-02` — перенос `pose_words` runtime surface и segmentation layer;
 - `ART-01` — active artifact manifest/load path;
+- `MIG-02` — [governance guardrail](mig-02-runtime-required-migration-governance.md) для controlled migration `PW-05`, `PW-03`, `PW-04` и `ART-02`;
 - `QA-01` и `INT-01` — smoke/integration checks и handoff docs.
 
 ## 10. Интеграционный слой
