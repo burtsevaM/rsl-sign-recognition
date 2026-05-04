@@ -68,6 +68,7 @@
 - [docs/runtime-skeleton.md](docs/runtime-skeleton.md) — target module structure
   и границы runtime skeleton для clean repo
 - [docs/artifact-policy.md](docs/artifact-policy.md) — target policy для active runtime artifact manifest, profiles и clean load path
+- [docs/mig-02-runtime-required-migration-governance.md](docs/mig-02-runtime-required-migration-governance.md) — governance guardrails и source-to-target mapping для future runtime-required migration issues
 - [docs/qa-01-smoke-test-strategy.md](docs/qa-01-smoke-test-strategy.md) — минимальная smoke test strategy для contract, mock, backend smoke и manual checks
 - [docs/int-01-web-team-handoff-notes.md](docs/int-01-web-team-handoff-notes.md) — минимальные handoff notes для web team вокруг clean runtime surface
 - [docs/contracts/websocket-contract-v1.md](docs/contracts/websocket-contract-v1.md) — versioned WebSocket contract v1 для sign-to-text runtime
@@ -89,6 +90,7 @@
 - `RT-01` и `RT-02` — runtime skeleton и health/readiness semantics;
 - `PW-01` и `PW-02` — перенос `pose_words` runtime wrapper и segmentation runtime;
 - `ART-01` — active artifact manifest/load path;
+- `MIG-02` — controlled migration governance для `PW-05`, `PW-03`, `PW-04` и `ART-02`;
 - `QA-01` и `INT-01` — smoke/integration strategy и handoff notes.
 
 Текущий implementation increment переносит только минимальный probe-level shell. Validation workflows, bootstrap/fallback path, локальные active artifact profiles и machine-local operational runbooks остаются в `gesture-recognition-draft` до отдельных migration tasks.
