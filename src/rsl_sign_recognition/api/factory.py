@@ -7,6 +7,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 
 from rsl_sign_recognition.api.routes.probes import router as probes_router
+from rsl_sign_recognition.api.routes.ws_stream import router as ws_stream_router
 from rsl_sign_recognition.runtime.config import RuntimeShellSettings
 from rsl_sign_recognition.runtime.services import RuntimeServiceRegistry
 from rsl_sign_recognition.runtime.shell import RuntimeShell
@@ -37,4 +38,5 @@ def create_app(
         lifespan=lifespan,
     )
     app.include_router(probes_router)
+    app.include_router(ws_stream_router)
     return app

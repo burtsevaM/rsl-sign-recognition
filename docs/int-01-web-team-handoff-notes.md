@@ -41,11 +41,11 @@
 - честное разделение liveness и readiness;
 - минимальные expectations для future smoke и manual integration checks.
 
-Пока **нельзя** считать готовым:
+После RT-04 можно считать доступным transport-level `WS /ws/stream`, который принимает JSON control messages и binary frames по `contract v1`, но пока **нельзя** считать готовым:
 
 - рабочий live runtime в clean repo beyond minimal shell;
 - production-grade readiness contour;
-- доказанную доступность `WS /ws/stream` как live transport surface;
+- `WS /ws/stream` как live inference stream с `recognition.result`;
 - наличие active artifacts и live-ready runtime shell;
 - end-to-end handoff beyond documented surface.
 
@@ -105,7 +105,7 @@ Source of truth для `contract v1`:
 Преждевременно ожидать сейчас:
 
 - что `mock` и `live` уже взаимозаменяемы;
-- что `WS /ws/stream` реально поднят и обслуживает live traffic;
+- что `WS /ws/stream` уже обслуживает live inference traffic;
 - что clean repo уже дает полный working backend contour;
 - что successful mock checks подтверждают production readiness.
 
@@ -191,7 +191,7 @@ Source of truth для `contract v1`:
 Что пока ограничено или зависит от следующих increment'ов:
 
 - реальная materialization active artifacts;
-- readiness для `live_runtime_path` по-прежнему остается `503`, пока в clean repo нет реального live `WS /ws/stream`;
+- readiness для `live_runtime_path` по-прежнему остается `503`, пока в clean repo нет live inference pipeline поверх `WS /ws/stream`;
 - подтверждение gate-ов на живом runtime shell.
 
 ### `WS /ws/stream`
@@ -211,11 +211,13 @@ Source of truth для `contract v1`:
 
 - версия контракта `1.0`;
 - stable envelope и minimum stable payload surface;
+- `control.clear_text` возвращает `control.ack`;
+- malformed/unsupported JSON и unavailable runtime возвращают contract-shaped `error`;
 - правило, что partial/final semantics идут через `payload.text_state.committed`, а не через отдельные message types.
 
 Что пока ограничено или зависит от следующих increment'ов:
 
-- реальная live-доступность endpoint;
+- live inference behavior поверх endpoint;
 - runtime behavior поверх active artifacts;
 - transport smoke against actual backend;
 - любые claims о latency, stability или strict frame-to-result correlation.
@@ -248,7 +250,7 @@ Source of truth для `contract v1`:
 
 Что пока остается предметом следующего working increment:
 
-- реальная live-проверка `/health`, `/ready` и `WS /ws/stream` на поднятом runtime shell;
+- реальная live inference проверка `/health`, `/ready` и `WS /ws/stream` на поднятом runtime shell;
 - проверка readiness gates против active artifacts;
 - backend smoke на actual transport surface, а не на fixture playback;
 - manual confirmation, что live path не использует hidden fallback или mock substitute.
@@ -257,7 +259,7 @@ Source of truth для `contract v1`:
 
 В follow-up issue на первый working handoff increment стоит включить:
 
-- реализацию minimal runtime-facing surface для `/health`, `/ready` и `WS /ws/stream` в clean repo;
+- подключение live inference pipeline к уже появившемуся runtime-facing surface `/health`, `/ready` и `WS /ws/stream`;
 - minimal backend smoke against real live path;
 - manual integration checklist с web team для отличения `mock-ready` от `live-ready`;
 - явную проверку active artifact gate без скрытого fallback в validation/bootstrap profiles.

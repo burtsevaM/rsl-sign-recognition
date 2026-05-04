@@ -101,7 +101,7 @@ def test_ready_is_not_ready_without_manifest_and_live_ws(tmp_path: Path) -> None
         },
         "reason_codes": [
             "active_manifest_missing",
-            "live_ws_stream_not_implemented",
+            "live_runtime_pipeline_unavailable",
         ],
     }
 
@@ -125,7 +125,7 @@ def test_ready_stays_not_ready_when_manifest_exists_but_live_transport_is_missin
             "active_artifacts": True,
             "transport_surface": False,
         },
-        "reason_codes": ["live_ws_stream_not_implemented"],
+        "reason_codes": ["live_runtime_pipeline_unavailable"],
     }
 
 
@@ -143,7 +143,7 @@ def test_ready_stays_not_ready_in_mock_mode(tmp_path: Path) -> None:
     }
     assert response.json()["reason_codes"] == [
         "runtime_mode_not_live",
-        "live_ws_stream_not_implemented",
+        "live_runtime_pipeline_unavailable",
     ]
 
 
@@ -152,7 +152,7 @@ def test_transport_surface_cannot_become_ready_from_test_side_only() -> None:
 
     assert transport_surface.evaluate().passed is False
     assert transport_surface.evaluate().reason_codes == (
-        "live_ws_stream_not_implemented",
+        "live_runtime_pipeline_unavailable",
     )
 
 

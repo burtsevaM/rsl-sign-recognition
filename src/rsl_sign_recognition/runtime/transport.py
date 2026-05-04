@@ -9,12 +9,12 @@ from rsl_sign_recognition.runtime.readiness import GateStatus
 
 @dataclass(frozen=True)
 class LiveTransportSurface:
-    """Future boundary for the live WebSocket transport surface."""
+    """Readiness boundary for the WebSocket surface linked to live runtime."""
 
     ws_stream_path: str = "/ws/stream"
 
     def evaluate(self) -> GateStatus:
         return GateStatus(
             passed=False,
-            reason_codes=("live_ws_stream_not_implemented",),
+            reason_codes=("live_runtime_pipeline_unavailable",),
         )
