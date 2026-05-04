@@ -2,7 +2,7 @@
 
 `rsl-sign-recognition` — clean repository для ML-модуля распознавания РЖЯ в сценарии sign-to-text. Его задача — стать местом для воспроизводимого runtime-контура, интеграционного контракта, runtime-facing документации и поэтапной миграции из draft-репозитория в более чистую долгоживущую структуру.
 
-На текущем этапе репозиторий уже содержит **минимальный FastAPI runtime shell** для `/health`, `/ready` и transport-level `WS /ws/stream`, но по-прежнему не содержит перенесенного inference/runtime-контура, активных артефактов, live inference pipeline, моделей, training/export-кода и operational scripts.
+На текущем этапе репозиторий уже содержит **минимальный FastAPI runtime shell** для `/health`, `/ready` и transport-level `WS /ws/stream`, а также первый не подключенный к transport слой `PW-05` для pose extraction / normalization / feature composition. Репозиторий по-прежнему не содержит перенесенного inference/runtime-контура, активных артефактов, live inference pipeline, моделей, training/export-кода и operational scripts.
 
 ## Что это за репозиторий
 
@@ -32,6 +32,7 @@
 - архитектурная, roadmap и backlog-документация;
 - зафиксированные границы runtime skeleton и минимальный FastAPI runtime shell;
 - app factory и ASGI entrypoint для probe-level runtime surface;
+- `PW-05` слой `pipelines/pose_words` для decoded RGB -> validated pose -> feature vector boundary без подключения к `/ws/stream`;
 - foundation CI skeleton для `push` и `pull_request`;
 - PR template и issue templates;
 - каноническая система milestones, epics, labels и task-кодов.
@@ -93,7 +94,18 @@
 - `MIG-02` — controlled migration governance для `PW-05`, `PW-03`, `PW-04` и `ART-02`;
 - `QA-01` и `INT-01` — smoke/integration strategy и handoff notes.
 
-Текущий implementation increment переносит только минимальный probe-level shell. Validation workflows, bootstrap/fallback path, локальные active artifact profiles и machine-local operational runbooks остаются в `gesture-recognition-draft` до отдельных migration tasks.
+Текущий clean contour ограничен минимальным probe-level shell и изолированным PW-05 pose feature layer. Validation workflows, bootstrap/fallback path, локальные active artifact profiles и machine-local operational runbooks остаются в `gesture-recognition-draft` до отдельных migration tasks.
+
+## PW-05 Pose Feature Runtime Layer
+
+В clean repo появился изолированный слой `rsl_sign_recognition.pipelines.pose_words`:
+
+- strict datatypes для `PoseFrame` и landmark groups;
+- lazy MediaPipe wrapper для уже decoded RGB `numpy.uint8` кадров;
+- shoulder normalization, leg hiding, 3D hand normalization и deterministic feature composition;
+- синхронный dependency-injected service boundary `RGB -> PoseFrame -> feature vector`.
+
+Этот слой не подключен к `WS /ws/stream`, не меняет `/health` или `/ready`, не загружает модели и не отправляет `recognition.result`. Segmentation, inference wrapper и active artifact loader остаются отдельными migration tasks.
 
 ## Minimal Runtime Shell
 
