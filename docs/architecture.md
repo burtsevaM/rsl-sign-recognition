@@ -39,7 +39,7 @@ Clean repo должен стать местом, где живут:
 - smoke, contract и integration checks;
 - handoff-документация для web/integration команды.
 
-На текущем этапе фактически присутствуют foundation docs, process assets, минимальный probe-level runtime shell, transport-level `WS /ws/stream` без live inference behavior, изолированный `PW-05` слой `pipelines/pose_words` для pose extraction / normalization / feature composition без transport wiring и изолированный `PW-04` слой `segmentation` для BIO decoder / streaming segmentation / feature-span extraction без transport wiring.
+На текущем этапе фактически присутствуют foundation docs, process assets, минимальный probe-level runtime shell, transport-level `WS /ws/stream` без live inference behavior, изолированный `PW-05` слой `pipelines/pose_words` для pose extraction / normalization / feature composition без transport wiring, изолированный `PW-04` слой `segmentation` для BIO decoder / streaming segmentation / feature-span extraction без transport wiring и изолированный `PW-03` слой `inference.pose_words` для classifier inference поверх готового feature clip `[T,F]` без transport wiring.
 
 ## 4. Что сюда не входит
 
@@ -142,9 +142,11 @@ tests/
 - `letters` не считается равноправным word-oriented runtime path;
 - training/export, dataset tooling, bootstrap/fallback paths и draft-only operational details в runtime skeleton не входят.
 
-Важно: эта структура по-прежнему остается **описанием целевого layout**. RT-03 переносит только минимальные модули для FastAPI shell, `/health`, `/ready` и readiness boundaries, а не весь runtime contour. PW-05 и PW-04 добавляют изолированные internal runtime layers, но не собирают live end-to-end recognition path.
+Важно: эта структура по-прежнему остается **описанием целевого layout**. RT-03 переносит только минимальные модули для FastAPI shell, `/health`, `/ready` и readiness boundaries, а не весь runtime contour. PW-05, PW-04 и PW-03 добавляют изолированные internal runtime layers, но не собирают live end-to-end recognition path.
 
 Текущий `segmentation` package уже содержит clean BIO decoder, streaming segmentation state, `BioSegmenterOnnxModel` и feature-span extraction по global frame indices. Этот слой не подключен к WebSocket transport, не отправляет `recognition.result`, не меняет `/health` или `/ready` и не делает full ML runtime готовым.
+
+Текущий `inference.pose_words` package уже содержит clean `PoseWordOnnxModel` для ONNX classifier inference по заранее подготовленному feature clip `[T,F]`, labels/config validation, static ONNX shape checks, output probability normalization и no-event label helper. Узкий helper `resample_to_fixed_T` живет в `pipelines.pose_words.clip` и работает только с already extracted segment clip. Этот слой не ищет active artifacts, не читает manifest, не владеет segmentation или raw frame processing, не подключен к WebSocket transport и не меняет readiness.
 
 ## 9. Приоритеты migration
 
