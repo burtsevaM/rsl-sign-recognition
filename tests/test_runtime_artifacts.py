@@ -139,6 +139,23 @@ def test_schema_version_unsupported_fails_clearly(tmp_path: Path) -> None:
     expect_load_error(path, "active_manifest_schema_version_unsupported")
 
 
+@pytest.mark.parametrize(
+    "overrides",
+    [
+        {"schema_version": "1"},
+        {"profile_id": ""},
+    ],
+)
+def test_required_manifest_metadata_invalid_fails_clearly(
+    tmp_path: Path,
+    overrides: dict[str, object],
+) -> None:
+    write_required_files(tmp_path)
+    path = write_manifest(tmp_path, default_manifest(**overrides))
+
+    expect_load_error(path, "active_manifest_metadata_invalid")
+
+
 def test_contour_must_be_pose_words(tmp_path: Path) -> None:
     write_required_files(tmp_path)
     path = write_manifest(tmp_path, default_manifest(contour="words"))

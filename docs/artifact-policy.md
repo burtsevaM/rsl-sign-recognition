@@ -309,7 +309,9 @@ Live-ready profile должен одновременно:
 
 - `active_manifest_missing` — primary manifest отсутствует;
 - `active_manifest_invalid_json` — manifest не является валидным JSON;
+- `active_manifest_read_failed` — manifest найден, но runtime не смог прочитать файл;
 - `active_manifest_invalid_shape` — JSON валиден, но top-level value не object;
+- `active_manifest_metadata_invalid` — обязательные manifest markers отсутствуют или имеют неверный тип/пустое значение;
 - `active_manifest_schema_version_unsupported` — schema version не поддерживается;
 - `active_manifest_contour_invalid` — contour не `pose_words`;
 - `active_profile_role_invalid` — profile не помечен как `active`;
