@@ -11,6 +11,7 @@ from rsl_sign_recognition.pipelines.pose_words.features import (
     hide_legs,
     shoulder_normalize,
 )
+from rsl_sign_recognition.pipelines.pose_words.clip import resample_to_fixed_T
 from rsl_sign_recognition.pipelines.pose_words.pose_extraction import (
     PoseExtractor,
     PoseExtractorConfig,
@@ -49,6 +50,7 @@ __all__ = [
     "compose_features_sequence",
     "hand_normalize_3d",
     "hide_legs",
+    "resample_to_fixed_T",
     "shoulder_normalize",
     "validate_pose_frame",
     "validate_rgb_frame",

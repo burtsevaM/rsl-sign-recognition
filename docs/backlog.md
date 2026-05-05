@@ -164,6 +164,8 @@
 
 Implementation status: follow-up `PW-04` добавляет в clean repo изолированный `segmentation` runtime layer для BIO decoder, streaming state, ONNX wrapper и feature-span extraction. Этот слой остается internal boundary: он не подключен к `WS /ws/stream`, не отправляет `recognition.result` и не меняет `/ready`.
 
+Implementation status: follow-up `PW-03` добавляет в clean repo изолированный `pose_words` classifier wrapper (`rsl_sign_recognition.inference.pose_words`) и narrow clip helper (`pipelines.pose_words.clip.resample_to_fixed_T`). Wrapper принимает только уже подготовленный feature clip `[T,F]` и уже разрешенные model/labels/config paths. Он не подключен к `WS /ws/stream`, не реализует end-to-end recognition, не читает active artifact manifest и не меняет `/ready`.
+
 #### Epic E — Runtime artifacts
 
 ##### [ART-01] Подготовить active artifact manifest/load path
