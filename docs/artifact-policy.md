@@ -12,7 +12,7 @@
 - описать **readiness semantics** для missing artifacts и non-active профилей;
 - зафиксировать **primary load path** без обязательной зависимости на draft-only `config.yaml`.
 
-Документ **не** переносит runtime-код, **не** реализует loader и **не** делает вид, что clean repo уже содержит рабочий artifact reader.
+В рамках `ART-01` документ **не** переносил runtime-код, **не** реализовывал loader и **не** делал вид, что clean repo уже содержит рабочий artifact reader. Follow-up `ART-02` реализует этот policy contract в `src/rsl_sign_recognition/runtime/artifacts.py` как active manifest reader / loader / readiness gate без переноса реальных artifacts и без запуска ONNX sessions.
 
 ## 2. Scope и non-goals
 
@@ -271,6 +271,20 @@ Primary load path фиксируется так:
 - classifier-only partial state не считается допустимым ready state, если segmentation subgroup неполный;
 - optional companion metadata files с `required: false` не должны валить readiness сами по себе.
 
+Для текущей `ART-02` реализации обязательный live set фиксирован явно:
+
+- `classifier_model` -> `classifier/model.onnx`;
+- `classifier_labels` -> `classifier/labels.txt`;
+- `segmentation_model` -> `segmentation/model.onnx`;
+- `segmentation_thresholds` -> `segmentation/thresholds.json`.
+
+Optional companions:
+
+- `classifier_config` -> `classifier/runtime_config.json`;
+- `segmentation_config` -> `segmentation/runtime_config.json`.
+
+Если optional descriptor присутствует с `required: false`, но файла нет на диске, readiness не падает. Если любой descriptor содержит absolute path, empty path или path traversal через `..`, manifest считается invalid независимо от `required`.
+
 ### 10.3. Missing non-active files
 
 Отсутствие файлов внутри `artifacts/validation/...` или `artifacts/bootstrap/...`:
@@ -290,6 +304,25 @@ Live-ready profile должен одновременно:
 - иметь `readiness_class`, совместимый с live runtime path;
 - содержать все required files для classifier и segmentation;
 - не требовать обращения к draft-only bootstrap/config fallback path.
+
+`ART-02` readiness gate использует stable reason codes для runtime-friendly diagnostics:
+
+- `active_manifest_missing` — primary manifest отсутствует;
+- `active_manifest_invalid_json` — manifest не является валидным JSON;
+- `active_manifest_invalid_shape` — JSON валиден, но top-level value не object;
+- `active_manifest_schema_version_unsupported` — schema version не поддерживается;
+- `active_manifest_contour_invalid` — contour не `pose_words`;
+- `active_profile_role_invalid` — profile не помечен как `active`;
+- `active_profile_not_live_candidate` — readiness class не `live_candidate`;
+- `active_manifest_source_pipeline_invalid` — source pipeline не `pose_words`;
+- `active_manifest_files_missing` — `files` отсутствует или пуст;
+- `active_manifest_descriptor_invalid` — file descriptor имеет неверную форму;
+- `active_manifest_relative_path_invalid` — `relative_path` отсутствует, пустой или не string;
+- `active_manifest_absolute_path_rejected` — descriptor пытается использовать absolute path;
+- `active_manifest_path_traversal_rejected` — descriptor пытается выйти из manifest directory;
+- `active_required_artifacts_missing` — отсутствует хотя бы один required live artifact.
+
+Эти reason codes влияют только на `active_artifacts` gate. `/ready` может оставаться `HTTP 503` даже при `active_artifacts=true`, если другие gates, например `transport_surface`, еще не закрыты.
 
 Для non-active профилей правило такое:
 
@@ -332,10 +365,9 @@ Draft repo использует `config.yaml` и соседние runtime paths 
 
 Этот policy increment:
 
-- не реализует manifest reader;
 - не описывает install/promote workflow;
 - не обещает, что artifacts уже лежат в репозитории;
 - не делает bootstrap главным runtime-сценарием;
 - не подменяет собой `PW-01`, `PW-02`, `RT-02` или будущую implementation task.
 
-Он только фиксирует честную target policy, внутри которой следующий implementation increment сможет загружать **active runtime artifacts** без опоры на draft-only `config.yaml` и без превращения bootstrap path в основной clean runtime сценарий.
+Он фиксирует честную target policy, внутри которой `ART-02` теперь читает **active runtime artifacts** без опоры на draft-only `config.yaml` и без превращения bootstrap path в основной clean runtime сценарий. `ART-02` при этом не переносит validation artifact generation, bootstrap/install/promote scripts, реальные `.onnx` files, dataset или live pipeline wiring.
