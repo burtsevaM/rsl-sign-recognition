@@ -2,7 +2,7 @@
 
 `rsl-sign-recognition` — clean repository для ML-модуля распознавания РЖЯ в сценарии sign-to-text. Его задача — стать местом для воспроизводимого runtime-контура, интеграционного контракта, runtime-facing документации и поэтапной миграции из draft-репозитория в более чистую долгоживущую структуру.
 
-На текущем этапе репозиторий уже содержит **минимальный FastAPI runtime shell** для `/health`, `/ready` и transport-level `WS /ws/stream`, а также первый не подключенный к transport слой `PW-05` для pose extraction / normalization / feature composition. Репозиторий по-прежнему не содержит перенесенного inference/runtime-контура, активных артефактов, live inference pipeline, моделей, training/export-кода и operational scripts.
+На текущем этапе репозиторий уже содержит **минимальный FastAPI runtime shell** для `/health`, `/ready` и transport-level `WS /ws/stream`, не подключенный к transport слой `PW-05` для pose extraction / normalization / feature composition, а также изолированный `PW-04` segmentation runtime layer для BIO boundaries поверх feature vectors. Репозиторий по-прежнему не содержит полного inference/runtime-контура, активных артефактов, live inference pipeline, моделей, training/export-кода и operational scripts.
 
 ## Что это за репозиторий
 
@@ -33,6 +33,7 @@
 - зафиксированные границы runtime skeleton и минимальный FastAPI runtime shell;
 - app factory и ASGI entrypoint для probe-level runtime surface;
 - `PW-05` слой `pipelines/pose_words` для decoded RGB -> validated pose -> feature vector boundary без подключения к `/ws/stream`;
+- `PW-04` слой `segmentation` для BIO decoder, streaming segmentation state, feature-span extraction и segmentation-specific ONNX wrapper без подключения к `/ws/stream`;
 - foundation CI skeleton для `push` и `pull_request`;
 - PR template и issue templates;
 - каноническая система milestones, epics, labels и task-кодов.
@@ -94,7 +95,7 @@
 - `MIG-02` — controlled migration governance для `PW-05`, `PW-03`, `PW-04` и `ART-02`;
 - `QA-01` и `INT-01` — smoke/integration strategy и handoff notes.
 
-Текущий clean contour ограничен минимальным probe-level shell и изолированным PW-05 pose feature layer. Validation workflows, bootstrap/fallback path, локальные active artifact profiles и machine-local operational runbooks остаются в `gesture-recognition-draft` до отдельных migration tasks.
+Текущий clean contour ограничен минимальным probe-level shell, изолированным `PW-05` pose feature layer и изолированным `PW-04` segmentation layer. Validation workflows, bootstrap/fallback path, локальные active artifact profiles и machine-local operational runbooks остаются в `gesture-recognition-draft` до отдельных migration tasks.
 
 ## PW-05 Pose Feature Runtime Layer
 
@@ -105,7 +106,19 @@
 - shoulder normalization, leg hiding, 3D hand normalization и deterministic feature composition;
 - синхронный dependency-injected service boundary `RGB -> PoseFrame -> feature vector`.
 
-Этот слой не подключен к `WS /ws/stream`, не меняет `/health` или `/ready`, не загружает модели и не отправляет `recognition.result`. Segmentation, inference wrapper и active artifact loader остаются отдельными migration tasks.
+Этот слой не подключен к `WS /ws/stream`, не меняет `/health` или `/ready`, не загружает модели и не отправляет `recognition.result`. Downstream classifier wrapper и active artifact loader остаются отдельными migration tasks.
+
+## PW-04 Segmentation Runtime Layer
+
+В clean repo появился изолированный слой `rsl_sign_recognition.segmentation`:
+
+- BIO decoder для `[T, 3]` probabilities с sanitization `NaN` / `Inf`, `min_len`, `max_len` и `merge_gap`;
+- runtime-facing `BioSegment` и `StreamingBioResult` dataclasses с global frame indices;
+- `StreamingBioSegmenter`, который принимает feature vectors из будущего `PW-05` stream boundary, агрегирует overlapping BIO outputs и возвращает completed/active sign и phrase segments;
+- `get_feature_span(start, end)` внутри segmentation layer без импорта downstream `pose_words` helpers;
+- segmentation-specific `BioSegmenterOnnxModel` с ленивым `onnxruntime` import и optional extra `segmentation`.
+
+Этот слой пока не подключен к `WS /ws/stream`, не запускает end-to-end recognition, не отправляет `recognition.result` и не делает `/ready` green. Он задает следующий internal runtime boundary: `PW-05 feature vector -> PW-04 segment bounds/span -> future PW-03 classifier`.
 
 ## Minimal Runtime Shell
 
@@ -121,7 +134,8 @@
 
 - не выполняет live inference поверх `WS /ws/stream`;
 - не загружает `pose_words`, `words` или `letters`;
-- не реализует inference, segmentation, training/export или draft-only fallback logic;
+- не подключает segmentation или classifier inference к live transport path;
+- не реализует training/export или draft-only fallback logic;
 - не объявляет `/ready = 200`, пока не закрыты `runtime_shell`, `active_artifacts` и `transport_surface`;
 - не имитирует `recognition.result`, если live runtime pipeline отсутствует.
 
