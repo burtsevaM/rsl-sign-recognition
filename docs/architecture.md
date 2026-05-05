@@ -39,7 +39,7 @@ Clean repo должен стать местом, где живут:
 - smoke, contract и integration checks;
 - handoff-документация для web/integration команды.
 
-На текущем этапе фактически присутствуют foundation docs, process assets, минимальный probe-level runtime shell и transport-level `WS /ws/stream` без inference, segmentation и live inference behavior.
+На текущем этапе фактически присутствуют foundation docs, process assets, минимальный probe-level runtime shell, transport-level `WS /ws/stream` без live inference behavior и изолированный `PW-05` слой `pipelines/pose_words` для pose extraction / normalization / feature composition без transport wiring.
 
 ## 4. Что сюда не входит
 
