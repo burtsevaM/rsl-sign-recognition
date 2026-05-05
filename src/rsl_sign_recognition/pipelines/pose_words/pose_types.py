@@ -182,4 +182,3 @@ __all__ = [
     "PoseLandmarksGroup",
     "validate_pose_frame",
 ]
-

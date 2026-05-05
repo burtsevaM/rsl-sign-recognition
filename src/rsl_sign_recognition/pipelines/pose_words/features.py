@@ -675,4 +675,3 @@ __all__ = [
     "hide_legs",
     "shoulder_normalize",
 ]
-

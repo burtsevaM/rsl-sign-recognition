@@ -200,4 +200,3 @@ def test_pose_feature_service_handles_no_pose() -> None:
     assert result.feature_vector is None
     assert result.hand_present is False
     assert result.aux == {"reason": "pose_not_detected"}
-

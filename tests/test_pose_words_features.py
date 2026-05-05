@@ -126,4 +126,3 @@ def test_compose_features_sequence_velocity_doubles_feature_dimension() -> None:
         velocity_features[1, DEFAULT_FEATURE_DIM:],
         base_features[1] - base_features[0],
     )
-

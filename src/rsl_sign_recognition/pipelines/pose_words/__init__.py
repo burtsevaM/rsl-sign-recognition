@@ -53,4 +53,3 @@ __all__ = [
     "validate_pose_frame",
     "validate_rgb_frame",
 ]
-

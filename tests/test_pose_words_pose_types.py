@@ -104,4 +104,3 @@ def test_validate_pose_frame_catches_mutated_invalid_group_shape() -> None:
 
     with pytest.raises(ValueError, match=r"shape \[N, 3\]"):
         validate_pose_frame(frame)
-

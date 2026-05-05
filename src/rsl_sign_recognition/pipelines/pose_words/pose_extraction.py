@@ -197,4 +197,3 @@ class PoseExtractor:
 
 
 __all__ = ["PoseExtractor", "PoseExtractorConfig", "validate_rgb_frame"]
-
