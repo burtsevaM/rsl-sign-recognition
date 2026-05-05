@@ -180,6 +180,8 @@ Implementation status: follow-up `PW-03` добавляет в clean repo изо
   - [ ] Разделены active, validation и bootstrap artifacts.
   - [ ] Нет зависимости на `config.yaml` и другие draft-only runtime paths без отдельной задачи.
 
+Implementation status: follow-up `ART-02` добавляет в clean repo `ActiveArtifactLoader` / `ActiveArtifactGate` для primary manifest `artifacts/runtime/active/pose_words/manifest.json`. Loader валидирует active/live profile markers, обязательный classifier + segmentation live set, безопасно разрешает manifest-relative paths и закрывает только `active_artifacts` readiness gate. Он не добавляет реальные artifacts, не запускает ONNX inference, не переносит bootstrap/install/promote scripts и не делает `/ready` green без live transport surface.
+
 #### Epic F — Tests & quality
 
 ##### [QA-01] Добавить smoke test strategy

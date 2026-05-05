@@ -39,12 +39,16 @@ def build_client(
 def write_active_manifest(tmp_path: Path) -> None:
     manifest_path = tmp_path / "artifacts/runtime/active/pose_words/manifest.json"
     classifier_model = manifest_path.parent / "classifier/model.onnx"
+    classifier_labels = manifest_path.parent / "classifier/labels.txt"
     segmentation_model = manifest_path.parent / "segmentation/model.onnx"
+    segmentation_thresholds = manifest_path.parent / "segmentation/thresholds.json"
 
     classifier_model.parent.mkdir(parents=True, exist_ok=True)
     segmentation_model.parent.mkdir(parents=True, exist_ok=True)
     classifier_model.write_bytes(b"classifier")
+    classifier_labels.write_text("hello\n", encoding="utf-8")
     segmentation_model.write_bytes(b"segmentation")
+    segmentation_thresholds.write_text("{}", encoding="utf-8")
 
     manifest_path.write_text(
         json.dumps(
@@ -61,8 +65,16 @@ def write_active_manifest(tmp_path: Path) -> None:
                         "relative_path": "classifier/model.onnx",
                         "required": True,
                     },
+                    "classifier_labels": {
+                        "relative_path": "classifier/labels.txt",
+                        "required": True,
+                    },
                     "segmentation_model": {
                         "relative_path": "segmentation/model.onnx",
+                        "required": True,
+                    },
+                    "segmentation_thresholds": {
+                        "relative_path": "segmentation/thresholds.json",
                         "required": True,
                     },
                 },

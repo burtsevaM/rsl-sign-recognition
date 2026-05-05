@@ -231,7 +231,7 @@ Backend smoke обязан явно разводить:
 - ситуация, когда non-active profile физически полон, но по policy не должен закрывать live readiness;
 - отсутствие optional `required: false` companion metadata, которое не должно ломать readiness само по себе.
 
-Эти проверки можно формализовать в future test plan, но до появления реального artifact reader и materialized artifact set они остаются manual/policy validation, а не честно закрытой automation.
+`ART-02` формализует reader-level часть этих проверок через focused tests для manifest shape, path resolution, required files и readiness gate. Manual/policy validation остается нужна для materialized real artifact set и будущего live pipeline wiring, потому что clean repo по-прежнему не коммитит реальные models и не запускает ONNX sessions в smoke contour.
 
 ### 7.2. Manual checks на readiness boundary
 
