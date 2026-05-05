@@ -39,7 +39,7 @@ Clean repo должен стать местом, где живут:
 - smoke, contract и integration checks;
 - handoff-документация для web/integration команды.
 
-На текущем этапе фактически присутствуют foundation docs, process assets, минимальный probe-level runtime shell, transport-level `WS /ws/stream` без live inference behavior и изолированный `PW-05` слой `pipelines/pose_words` для pose extraction / normalization / feature composition без transport wiring.
+На текущем этапе фактически присутствуют foundation docs, process assets, минимальный probe-level runtime shell, transport-level `WS /ws/stream` без live inference behavior, изолированный `PW-05` слой `pipelines/pose_words` для pose extraction / normalization / feature composition без transport wiring и изолированный `PW-04` слой `segmentation` для BIO decoder / streaming segmentation / feature-span extraction без transport wiring.
 
 ## 4. Что сюда не входит
 
@@ -70,7 +70,7 @@ Clean repo должен стать местом, где живут:
 
 Это решение не означает:
 
-- что `pose_words` уже перенесен в clean repo;
+- что полный `pose_words` runtime pipeline уже перенесен в clean repo;
 - что он уже доказан как production-ready replacement;
 - что baseline сравнение с `words` больше не нужно.
 
@@ -142,7 +142,9 @@ tests/
 - `letters` не считается равноправным word-oriented runtime path;
 - training/export, dataset tooling, bootstrap/fallback paths и draft-only operational details в runtime skeleton не входят.
 
-Важно: эта структура по-прежнему остается **описанием целевого layout**. RT-03 переносит только минимальные модули для FastAPI shell, `/health`, `/ready` и readiness boundaries, а не весь runtime contour.
+Важно: эта структура по-прежнему остается **описанием целевого layout**. RT-03 переносит только минимальные модули для FastAPI shell, `/health`, `/ready` и readiness boundaries, а не весь runtime contour. PW-05 и PW-04 добавляют изолированные internal runtime layers, но не собирают live end-to-end recognition path.
+
+Текущий `segmentation` package уже содержит clean BIO decoder, streaming segmentation state, `BioSegmenterOnnxModel` и feature-span extraction по global frame indices. Этот слой не подключен к WebSocket transport, не отправляет `recognition.result`, не меняет `/health` или `/ready` и не делает full ML runtime готовым.
 
 ## 9. Приоритеты migration
 

@@ -162,6 +162,8 @@
   - [ ] Определено, какие части segmentation относятся к runtime, а какие остаются в draft validation/research contour.
   - [ ] Согласованы требования к smoke и manual validation для segmentation path.
 
+Implementation status: follow-up `PW-04` добавляет в clean repo изолированный `segmentation` runtime layer для BIO decoder, streaming state, ONNX wrapper и feature-span extraction. Этот слой остается internal boundary: он не подключен к `WS /ws/stream`, не отправляет `recognition.result` и не меняет `/ready`.
+
 #### Epic E — Runtime artifacts
 
 ##### [ART-01] Подготовить active artifact manifest/load path
