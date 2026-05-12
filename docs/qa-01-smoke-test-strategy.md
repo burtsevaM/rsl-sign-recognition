@@ -282,6 +282,7 @@ Automated contract tests проверяют:
 - `control.ack` для `control.clear_text`;
 - session-level `error` fixture с `runtime_unavailable`;
 - helper-level messages `control.ack`, `frame_decode_failed` и `runtime_unavailable`;
+- negative error semantics для `invalid_json`, `unsupported_contract_version`, `unsupported_control_action`, `frame_decode_failed` и `runtime_unavailable`;
 - rejection path для недокументированных message types вроде `partial.result`, `final.result`, `session.start`, `session.stop` и JSON-wrapper для frame input.
 
 Эти tests намеренно не проверяют model quality, segmentation correctness, frame-to-result correlation или live recognition. `recognition.result` покрывается через documented fixtures/mock-compatible surface; текущий live `WS /ws/stream` при binary JPEG frame без подключенного live pipeline должен возвращать `runtime_unavailable`.
@@ -294,6 +295,7 @@ Automated smoke checks проверяют:
 - `/ready` как readiness endpoint для `live_runtime_path`, включая `HTTP 503`, `gates` и `reason_codes`, когда active manifest отсутствует;
 - состояние, где `active_artifacts=true` после валидного manifest с required files, но `/ready` остается `HTTP 503`, потому что `transport_surface=false`;
 - минимальную `WS /ws/stream` session: `control.clear_text` возвращает `control.ack`, а binary JPEG frame без live pipeline возвращает contract-shaped `runtime_unavailable`;
+- negative WebSocket paths для malformed JSON control message (`invalid_json`), несовместимого `contract_version` (`unsupported_contract_version`), неизвестного control action (`unsupported_control_action`) и invalid binary frame (`frame_decode_failed`);
 - mock/live boundary: `runtime_mode = "mock"` не делает `/ready` live-ready даже при валидном active manifest.
 
 Эти checks согласованы с `ART-02`: active artifact loader может закрыть только `active_artifacts` gate. Наличие валидного manifest и placeholder required files в тесте не означает production artifacts и не запускает ONNX sessions.

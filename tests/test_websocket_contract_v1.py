@@ -162,6 +162,50 @@ def test_runtime_unavailable_helper_preserves_mock_live_boundary() -> None:
     assert "mock" not in message["payload"]
 
 
+def test_frame_decode_failed_helper_is_recoverable_contract_error() -> None:
+    message = frame_decode_failed_error()
+
+    assert_error_message(message, code="frame_decode_failed", recoverable=True)
+
+
+@pytest.mark.parametrize(
+    ("raw_message", "code", "recoverable"),
+    [
+        ("{", "invalid_json", True),
+        (
+            json.dumps(
+                {
+                    "type": "control.clear_text",
+                    "contract_version": "2.0",
+                    "payload": {},
+                }
+            ),
+            "unsupported_contract_version",
+            False,
+        ),
+        (
+            json.dumps(
+                {
+                    "type": "control.reset_session",
+                    "contract_version": "1.0",
+                    "payload": {},
+                }
+            ),
+            "unsupported_control_action",
+            True,
+        ),
+    ],
+)
+def test_client_json_path_returns_documented_negative_contract_errors(
+    raw_message: str,
+    code: str,
+    recoverable: bool,
+) -> None:
+    response = response_for_client_text(raw_message)
+
+    assert_error_message(response, code=code, recoverable=recoverable)
+
+
 @pytest.mark.parametrize(
     "message_type",
     sorted(FORBIDDEN_PROTOCOL_TYPES),

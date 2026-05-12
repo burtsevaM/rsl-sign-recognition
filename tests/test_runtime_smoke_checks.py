@@ -61,6 +61,37 @@ def write_active_artifact_manifest(tmp_path: Path) -> None:
     )
 
 
+def error_message(code: str) -> str:
+    return {
+        "invalid_json": "Invalid JSON control message.",
+        "unsupported_control_action": "Unsupported control action.",
+        "unsupported_contract_version": "Unsupported contract version.",
+        "frame_decode_failed": "Binary frame is not a valid JPEG packet.",
+        "runtime_unavailable": "Runtime is unavailable for the current session.",
+    }[code]
+
+
+def error_response(
+    code: str,
+    *,
+    recoverable: bool,
+    details: dict[str, object] | None = None,
+) -> dict[str, object]:
+    payload: dict[str, object] = {
+        "code": code,
+        "message": error_message(code),
+        "recoverable": recoverable,
+    }
+    if details is not None:
+        payload["details"] = details
+
+    return {
+        "type": "error",
+        "contract_version": "1.0",
+        "payload": payload,
+    }
+
+
 def test_health_liveness_smoke_stays_green_when_live_runtime_is_not_ready(
     tmp_path: Path,
 ) -> None:
@@ -133,18 +164,73 @@ def test_minimal_ws_stream_smoke_covers_control_and_runtime_unavailable(
             }
 
             websocket.send_bytes(b"\xff\xd8\xff\xd9")
-            assert websocket.receive_json() == {
-                "type": "error",
-                "contract_version": "1.0",
-                "payload": {
-                    "code": "runtime_unavailable",
-                    "message": "Runtime is unavailable for the current session.",
-                    "recoverable": False,
-                    "details": {
-                        "reason": "live_inference_pipeline_unavailable",
-                    },
-                },
-            }
+            assert websocket.receive_json() == error_response(
+                "runtime_unavailable",
+                recoverable=False,
+                details={"reason": "live_inference_pipeline_unavailable"},
+            )
+
+
+def test_ws_stream_returns_invalid_json_for_malformed_control_message(
+    tmp_path: Path,
+) -> None:
+    with build_client(tmp_path) as client:
+        with client.websocket_connect("/ws/stream") as websocket:
+            websocket.send_text("{")
+
+            assert websocket.receive_json() == error_response(
+                "invalid_json",
+                recoverable=True,
+            )
+
+
+def test_ws_stream_rejects_unsupported_contract_major_version(
+    tmp_path: Path,
+) -> None:
+    with build_client(tmp_path) as client:
+        with client.websocket_connect("/ws/stream") as websocket:
+            websocket.send_json(
+                {
+                    "type": "control.clear_text",
+                    "contract_version": "2.0",
+                    "payload": {},
+                }
+            )
+
+            assert websocket.receive_json() == error_response(
+                "unsupported_contract_version",
+                recoverable=False,
+            )
+
+
+def test_ws_stream_rejects_unknown_control_action(tmp_path: Path) -> None:
+    with build_client(tmp_path) as client:
+        with client.websocket_connect("/ws/stream") as websocket:
+            websocket.send_json(
+                {
+                    "type": "control.reset_session",
+                    "contract_version": "1.0",
+                    "payload": {},
+                }
+            )
+
+            assert websocket.receive_json() == error_response(
+                "unsupported_control_action",
+                recoverable=True,
+            )
+
+
+def test_ws_stream_returns_frame_decode_failed_for_invalid_binary_frame(
+    tmp_path: Path,
+) -> None:
+    with build_client(tmp_path) as client:
+        with client.websocket_connect("/ws/stream") as websocket:
+            websocket.send_bytes(b"not-a-jpeg")
+
+            assert websocket.receive_json() == error_response(
+                "frame_decode_failed",
+                recoverable=True,
+            )
 
 
 def test_mock_mode_smoke_does_not_make_live_readiness_ready(
