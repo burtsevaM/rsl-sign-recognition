@@ -1,0 +1,87 @@
+{
+  "schema_version": 1,
+  "contour": "pose_words",
+  "profile_id": "runtime_active",
+  "profile_role": "active",
+  "profile_origin": "runtime",
+  "readiness_class": "live_candidate",
+  "source_pipeline": "pose_words",
+  "generated_by": "ART-03 clean active artifact pack",
+  "dataset_kind": "synthetic_fixture",
+  "trained": true,
+  "source_draft_repo": "https://github.com/burtsevaM/gesture-recognition-draft",
+  "source_draft_branch": "burtseva_ma_mvp_words",
+  "source_profile_id": "validation_active",
+  "source_draft_paths": {
+    "classifier_model": "backend/artifacts/runtime/active/pose_words/pose_word_model.onnx",
+    "classifier_labels": "backend/artifacts/runtime/active/pose_words/pose_word_labels.txt",
+    "classifier_config": "backend/artifacts/runtime/active/pose_words/pose_word_config.json",
+    "segmentation_model": "backend/artifacts/runtime/active/pose_words/bio_segmenter.onnx",
+    "segmentation_thresholds": "backend/artifacts/runtime/active/pose_words/bio_thresholds.json",
+    "segmentation_config": "backend/artifacts/runtime/active/pose_words/bio_config.json",
+    "active_manifest": "backend/artifacts/runtime/active/pose_words/pose_words_active_manifest.json"
+  },
+  "notes": [
+    "Minimal technical/runtime pack prepared for clean ART-03 readiness checks.",
+    "Artifacts come from the draft validation_active profile based on synthetic fixtures.",
+    "This pack is not a production-quality proof and does not wire live WebSocket inference."
+  ],
+  "files": {
+    "classifier_model": {
+      "relative_path": "classifier/model.onnx",
+      "component": "pose_words_classifier",
+      "artifact_kind": "model",
+      "required": true,
+      "trained": true,
+      "source_artifact_kind": "validation",
+      "size_bytes": 152107,
+      "sha256": "2fb75a51ef239bc3bd9e67ad3464505e5bab6ded418d881502f192df9efbfb08"
+    },
+    "classifier_labels": {
+      "relative_path": "classifier/labels.txt",
+      "component": "pose_words_classifier",
+      "artifact_kind": "labels",
+      "required": true,
+      "trained": true,
+      "source_artifact_kind": "validation",
+      "size_bytes": 32,
+      "sha256": "3d0156ddc2daf0c9db125ecee64b40b4a5ddf4b50746c9a4f53a13132b4b5261"
+    },
+    "classifier_config": {
+      "relative_path": "classifier/runtime_config.json",
+      "component": "pose_words_classifier",
+      "artifact_kind": "runtime_config",
+      "required": false,
+      "trained": true,
+      "source_artifact_kind": "validation"
+    },
+    "segmentation_model": {
+      "relative_path": "segmentation/model.onnx",
+      "component": "bio_segmentation",
+      "artifact_kind": "model",
+      "required": true,
+      "trained": true,
+      "source_artifact_kind": "validation",
+      "size_bytes": 94478,
+      "sha256": "dbca57fb559a70c64b520e1dbfca283305a0c0ea1ca3d1a844a5129d6f1582f2"
+    },
+    "segmentation_thresholds": {
+      "relative_path": "segmentation/thresholds.json",
+      "component": "bio_segmentation",
+      "artifact_kind": "thresholds",
+      "required": true,
+      "trained": true,
+      "source_artifact_kind": "validation",
+      "size_bytes": 1379,
+      "sha256": "c432e98c26ef7e22cb12522887fb87d7e06a313a58ec8e098004f1ae2ae9adc1"
+    },
+    "segmentation_config": {
+      "relative_path": "segmentation/runtime_config.json",
+      "component": "bio_segmentation",
+      "artifact_kind": "runtime_config",
+      "required": false,
+      "trained": true,
+      "source_artifact_kind": "validation"
+    }
+  }
+}
