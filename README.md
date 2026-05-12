@@ -75,6 +75,7 @@
 - [docs/mig-02-runtime-required-migration-governance.md](docs/mig-02-runtime-required-migration-governance.md) — governance guardrails и source-to-target mapping для future runtime-required migration issues
 - [docs/qa-01-smoke-test-strategy.md](docs/qa-01-smoke-test-strategy.md) — минимальная smoke test strategy для contract, mock, backend smoke и manual checks
 - [docs/int-01-web-team-handoff-notes.md](docs/int-01-web-team-handoff-notes.md) — минимальные handoff notes для web team вокруг clean runtime surface
+- [docs/integration/web-team-runtime-surface.md](docs/integration/web-team-runtime-surface.md) — первый integration handoff для web team по `/health`, `/ready`, `WS /ws/stream`, readiness gates и `runtime_unavailable`
 - [docs/contracts/websocket-contract-v1.md](docs/contracts/websocket-contract-v1.md) — versioned WebSocket contract v1 для sign-to-text runtime
 - [docs/contracts/mock-protocol-mode.md](docs/contracts/mock-protocol-mode.md) — mock protocol mode поверх contract v1 для web team и smoke-checks без live runtime
 - [docs/roadmap.md](docs/roadmap.md) — milestones `M0`-`M3`, зависимости и критерии завершения
