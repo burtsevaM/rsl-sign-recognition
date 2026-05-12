@@ -13,8 +13,8 @@
 
 Важно:
 
-- это **strategy document**, а не реализация тестов;
-- документ **не** добавляет runtime code, test files, CI automation, mock server или artifact loader;
+- исходно это **strategy document**; после `QA-02` часть стратегии реализована focused automated tests в `tests/`, но это все еще не production-grade QA contour;
+- сам документ **не** добавляет runtime code, CI automation, mock server или artifact loader;
 - документ описывает, **что именно должно проверяться**, когда в clean repo появится соответствующая runtime surface;
 - до runtime-level migration и появления active artifacts часть этой стратегии остается только policy-границей и manual expectation.
 
@@ -268,12 +268,55 @@ QA-01 **не вводит новый смысл** readiness. Стратегия 
 - strategy не должна переопределять `runtime_shell`, `active_artifacts` или `transport_surface`;
 - strategy не должна обещать, что readiness можно полностью доказать документационной automation без runtime migration.
 
-## 9. Non-goals и ограничения
+## 9. QA-02: реализованный automated contour
+
+`QA-02` добавляет первый implementation-level слой проверок вокруг уже перенесенного runtime surface. Эти проверки закрывают contract и smoke boundary, но не расширяют runtime capabilities.
+
+### 9.1. Что покрывают automated contract tests
+
+Automated contract tests проверяют:
+
+- fixtures `recognition.result` для `HOLD` и `COMMIT` как contract messages, а не как доказательство live inference;
+- обязательный envelope `type`, `contract_version`, `payload`;
+- stable payload fields для `recognition.result`: `status`, `word`, `confidence`, `hand_present`, `hold`, `text_state`, `timestamp_ms`;
+- `control.ack` для `control.clear_text`;
+- session-level `error` fixture с `runtime_unavailable`;
+- helper-level messages `control.ack`, `frame_decode_failed` и `runtime_unavailable`;
+- rejection path для недокументированных message types вроде `partial.result`, `final.result`, `session.start`, `session.stop` и JSON-wrapper для frame input.
+
+Эти tests намеренно не проверяют model quality, segmentation correctness, frame-to-result correlation или live recognition. `recognition.result` покрывается через documented fixtures/mock-compatible surface; текущий live `WS /ws/stream` при binary JPEG frame без подключенного live pipeline должен возвращать `runtime_unavailable`.
+
+### 9.2. Что покрывают automated smoke checks
+
+Automated smoke checks проверяют:
+
+- `/health` как liveness endpoint: `HTTP 200`, `status = "ok"`, `probe = "liveness"`, `runtime_mode`;
+- `/ready` как readiness endpoint для `live_runtime_path`, включая `HTTP 503`, `gates` и `reason_codes`, когда active manifest отсутствует;
+- состояние, где `active_artifacts=true` после валидного manifest с required files, но `/ready` остается `HTTP 503`, потому что `transport_surface=false`;
+- минимальную `WS /ws/stream` session: `control.clear_text` возвращает `control.ack`, а binary JPEG frame без live pipeline возвращает contract-shaped `runtime_unavailable`;
+- mock/live boundary: `runtime_mode = "mock"` не делает `/ready` live-ready даже при валидном active manifest.
+
+Эти checks согласованы с `ART-02`: active artifact loader может закрыть только `active_artifacts` gate. Наличие валидного manifest и placeholder required files в тесте не означает production artifacts и не запускает ONNX sessions.
+
+### 9.3. Manual checks после QA-02
+
+Manual checks остаются обязательными для сценариев, где clean repo пока не содержит реальные active artifacts и live inference pipeline:
+
+- поднять сервис локально, например `python3 -m uvicorn rsl_sign_recognition.asgi:app --app-dir src`, и проверить `GET /health`;
+- проверить `GET /ready` и убедиться, что `HTTP 503` объяснен readiness `gates` / `reason_codes`, а не маскируется под успешную live readiness;
+- открыть минимальную WebSocket session на `WS /ws/stream`, отправить `control.clear_text` и убедиться в `control.ack`;
+- отправить binary JPEG frame и трактовать `runtime_unavailable` как честный session-level signal отсутствующего live pipeline;
+- отдельно подтвердить, что validation/bootstrap artifacts не подменяют `artifacts/runtime/active/pose_words/manifest.json`;
+- после будущего подключения live runtime проверить, что session использует active runtime path, а не hidden fallback или mock source.
+
+Full e2e/live recognition не входит в `QA-02`, потому что для него нужны отдельные future tasks: wiring `PW-05` / `PW-04` / `PW-03` в live WebSocket pipeline, реальные active ONNX artifacts, startup/runtime hooks и manual integration validation с web team.
+
+## 10. Non-goals и ограничения
 
 Эта стратегия намеренно **не** обещает:
 
-- что checks уже реализованы в репозитории;
-- что Foundation CI уже запускает contract, mock или backend smoke;
+- что все checks из стратегии уже автоматизированы;
+- что Foundation CI имеет отдельный production-grade contract/mock/backend-smoke contour beyond текущего `pytest` runtime surface;
 - что clean repo уже содержит working backend runtime;
 - что mock contour покрывает live runtime behavior;
 - что readiness можно считать закрытой без active artifacts;
