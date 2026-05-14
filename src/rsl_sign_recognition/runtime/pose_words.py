@@ -37,6 +37,7 @@ class LivePoseWordsRuntimeState:
     reason_codes: tuple[str, ...] = field(default_factory=tuple)
     manifest_path: Path | None = None
     profile_id: str | None = None
+    missing_artifacts: tuple[str, ...] = field(default_factory=tuple)
     components: tuple[str, ...] = field(default_factory=tuple)
     pipeline: PoseWordsRuntimePipeline | None = None
 
@@ -53,6 +54,8 @@ class LivePoseWordsRuntimeState:
         }
         if self.reason_codes:
             payload["reason_codes"] = list(self.reason_codes)
+        if self.missing_artifacts:
+            payload["missing_artifacts"] = list(self.missing_artifacts)
         if self.manifest_path is not None:
             payload["manifest_path"] = str(self.manifest_path)
         if self.profile_id is not None:
@@ -100,6 +103,7 @@ class LivePoseWordsRuntimeService:
                 status=_status_for_artifact_error(exc),
                 reason_codes=exc.reason_codes,
                 manifest_path=self.settings.active_manifest_path,
+                missing_artifacts=exc.missing_artifacts,
             )
 
         try:

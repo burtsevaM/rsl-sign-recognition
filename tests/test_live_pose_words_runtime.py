@@ -2,8 +2,10 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+from typing import Any
 
 import numpy as np
+import pytest
 
 from rsl_sign_recognition.pipelines.pose_words.runtime import (
     build_pose_words_runtime_pipeline,
@@ -87,6 +89,7 @@ def write_active_pack(
     tmp_path: Path,
     *,
     skip_required: str | None = None,
+    empty_labels: bool = False,
     files: dict[str, object] | None = None,
 ) -> Path:
     manifest_path = active_manifest_path(tmp_path)
@@ -126,7 +129,8 @@ def write_active_pack(
         artifact_path = root / relative_path
         artifact_path.parent.mkdir(parents=True, exist_ok=True)
         if name == "classifier_labels":
-            artifact_path.write_text("_no_event\nпривет\nпока\n", encoding="utf-8")
+            labels = "" if empty_labels else "_no_event\nпривет\nпока\n"
+            artifact_path.write_text(labels, encoding="utf-8")
         elif name.endswith("config"):
             artifact_path.write_text('{"window_size": 64}', encoding="utf-8")
         elif name == "segmentation_thresholds":
@@ -167,6 +171,8 @@ def fake_pipeline_factory(artifacts):
     )
 
 
+# RT-08 validates service-level orchestration. The happy path uses fake model
+# wrappers so this test does not become an ONNXRuntime/live inference proof.
 def test_live_pose_words_runtime_initializes_from_active_manifest(
     tmp_path: Path,
 ) -> None:
@@ -208,6 +214,7 @@ def test_live_pose_words_runtime_reports_unavailable_for_missing_manifest(
     assert state.status is LivePoseWordsRuntimeStatus.UNAVAILABLE
     assert state.available is False
     assert state.reason_codes == ("active_manifest_missing",)
+    assert state.missing_artifacts == ()
     assert state.pipeline is None
 
 
@@ -224,6 +231,8 @@ def test_live_pose_words_runtime_reports_unavailable_for_missing_required_artifa
 
     assert state.status is LivePoseWordsRuntimeStatus.UNAVAILABLE
     assert state.reason_codes == ("active_required_artifacts_missing",)
+    assert state.missing_artifacts == ("segmentation_model",)
+    assert state.as_payload()["missing_artifacts"] == ["segmentation_model"]
     assert state.pipeline is None
 
 
@@ -258,6 +267,7 @@ def test_live_pose_words_runtime_reports_invalid_for_bad_manifest_path(
 
     assert state.status is LivePoseWordsRuntimeStatus.INVALID
     assert state.reason_codes == ("active_manifest_path_traversal_rejected",)
+    assert state.missing_artifacts == ()
     assert state.pipeline is None
 
 
@@ -288,3 +298,75 @@ def test_live_pose_words_runtime_does_not_fallback_to_validation_or_bootstrap(
     assert state.status is LivePoseWordsRuntimeStatus.UNAVAILABLE
     assert state.reason_codes == ("active_manifest_missing",)
     assert state.manifest_path == active_manifest_path(tmp_path)
+
+
+@pytest.mark.parametrize(
+    ("factory_error", "expected_status", "expected_reason", "expected_exception"),
+    [
+        (
+            ImportError("missing optional runtime dependency"),
+            LivePoseWordsRuntimeStatus.UNAVAILABLE,
+            "pose_words_runtime_dependency_unavailable",
+            "exception:ImportError",
+        ),
+        (
+            FileNotFoundError("runtime component disappeared"),
+            LivePoseWordsRuntimeStatus.UNAVAILABLE,
+            "pose_words_runtime_component_missing",
+            "exception:FileNotFoundError",
+        ),
+        (
+            ValueError("invalid runtime component"),
+            LivePoseWordsRuntimeStatus.INVALID,
+            "pose_words_runtime_misconfigured",
+            "exception:ValueError",
+        ),
+        (
+            TypeError("invalid runtime factory wiring"),
+            LivePoseWordsRuntimeStatus.INVALID,
+            "pose_words_runtime_misconfigured",
+            "exception:TypeError",
+        ),
+    ],
+)
+def test_live_pose_words_runtime_controls_pipeline_factory_failures(
+    tmp_path: Path,
+    factory_error: Exception,
+    expected_status: LivePoseWordsRuntimeStatus,
+    expected_reason: str,
+    expected_exception: str,
+) -> None:
+    write_active_pack(tmp_path)
+
+    def failing_pipeline_factory(_artifacts: Any):
+        raise factory_error
+
+    service = LivePoseWordsRuntimeService.from_settings(
+        build_settings(tmp_path),
+        pipeline_factory=failing_pipeline_factory,
+    )
+
+    state = service.initialize()
+
+    assert state.status is expected_status
+    assert state.available is False
+    assert expected_reason in state.reason_codes
+    assert expected_exception in state.reason_codes
+    assert state.missing_artifacts == ()
+    assert state.pipeline is None
+
+
+def test_default_pose_words_pipeline_failure_is_controlled_without_onnxruntime(
+    tmp_path: Path,
+) -> None:
+    write_active_pack(tmp_path, empty_labels=True)
+    service = LivePoseWordsRuntimeService.from_settings(build_settings(tmp_path))
+
+    state = service.initialize()
+
+    assert state.status is LivePoseWordsRuntimeStatus.INVALID
+    assert state.available is False
+    assert "pose_words_runtime_misconfigured" in state.reason_codes
+    assert "exception:ValueError" in state.reason_codes
+    assert state.missing_artifacts == ()
+    assert state.pipeline is None
