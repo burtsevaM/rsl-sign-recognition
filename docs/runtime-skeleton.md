@@ -522,7 +522,8 @@ RT-08 добавляет внутренний service-level boundary для live
 - `runtime.pose_words.LivePoseWordsRuntimeService` инициализируется через `RuntimeShellSettings` и использует `active_manifest_path`;
 - `pipelines.pose_words.runtime` собирает конкретный `pose_words` path из `PW-05` pose feature service, `PW-04` streaming BIO segmentation layer, `PW-03` classifier wrapper и `ART-02` active artifact loader;
 - отсутствующий active manifest или missing required artifact возвращает controlled `status="unavailable"`;
-- некорректный manifest или misconfigured runtime components возвращают controlled `status="invalid"`;
+- некорректный manifest, invalid runtime config или model loading failure возвращают controlled `status="invalid"`;
+- недоступный inference backend или missing runtime component возвращает controlled `status="unavailable"`;
 - successful assembly возвращает `status="ready"` только на service-level boundary и не означает, что `WS /ws/stream` уже подключен к live inference.
 
 RT-08 не добавляет новый protocol поверх contract v1, не меняет WebSocket handler и не использует validation/bootstrap directories или draft-only `config.yaml` как fallback. `transport_surface` остается отдельным gate и должен закрываться отдельной transport integration задачей.
@@ -557,3 +558,47 @@ RT-09 явно обрабатывает runtime states без случайных
 - unavailable/invalid runtime initialization остается controlled service-level result через RT-08 state.
 
 RT-09 не подключает `WS /ws/stream`, не меняет WebSocket contract v1, не добавляет новый protocol и не делает `/ready` green. Transport ownership остается future integration scope: API layer должен лишь передать normalized runtime-facing action в session boundary и сериализовать domain-level outcome в уже существующий contract v1.
+
+### 13.9. RT-10 controlled failure и runtime-unavailable semantics
+
+RT-10 фиксирует controlled failure semantics поверх RT-08/RT-09 без изменения `contract v1` и без добавления нового public protocol surface.
+
+Service-level initialization для `runtime.pose_words` должен возвращать предсказуемое состояние, а не выпускать наружу random exception:
+
+| Situation | Controlled state | Reason code examples |
+| --- | --- | --- |
+| Active manifest отсутствует | `status="unavailable"` | `active_manifest_missing` |
+| Manifest невалиден, имеет неверный profile marker, absolute path или traversal | `status="invalid"` | `active_manifest_invalid_json`, `active_manifest_metadata_invalid`, `active_manifest_path_traversal_rejected` |
+| Required artifact file отсутствует | `status="unavailable"` | `active_required_artifacts_missing` |
+| Manifest невозможно прочитать | `status="unavailable"` | `active_manifest_read_failed` |
+| Runtime config / thresholds / labels / shape невалидны | `status="invalid"` | `pose_words_runtime_config_invalid` |
+| Model file исчез после manifest load | `status="unavailable"` | `pose_words_runtime_component_missing` |
+| ONNX/model loading падает controlled ошибкой | `status="invalid"` | `pose_words_model_loading_failed` |
+| Optional inference backend недоступен | `status="unavailable"` | `inference_backend_unavailable`, `pose_extraction_backend_unavailable` |
+| Runtime mode не `live` | `status="unavailable"` | `runtime_mode_not_live` |
+
+`runtime_unavailable` на transport/service boundary означает честный unavailable state:
+
+- это не successful recognition;
+- это не `recognition.result`;
+- это не mock success и не hidden fallback;
+- это не crash/random exception;
+- это controlled unavailable/error state, который может быть сериализован transport layer в уже существующий `error` message с `code="runtime_unavailable"` и `details.reason="live_inference_pipeline_unavailable"` там, где недоступность проявляется в session/live path.
+
+RT-10 также разводит unavailable и no-result:
+
+- `empty_buffer` и `insufficient_buffer` остаются `no_result`, потому что runtime/session доступны, но входных данных пока недостаточно;
+- `pose_not_detected`, `no_hand_detected`, `no_active_segment`, `no_completed_segment` и `no_event` остаются domain-level `no_result`;
+- `runtime_unavailable` используется только когда live path или его backend/config/artifact/model boundary недоступны для продолжения runtime work.
+
+Mock/live boundary остается прежней:
+
+- mock fixtures могут доказывать contract parsing и UI handling;
+- successful mock smoke не делает live runtime ready;
+- live path не должен возвращать mock `recognition.result`, если active artifacts, config, model loading или inference backend недоступны.
+
+Эта semantics согласована с будущими задачами:
+
+- RT-06 должен сериализовать domain/service states в существующий `contract v1`, а не добавлять новые message types;
+- RT-07 должен использовать readiness gates для pre-session truth и не выставлять `/ready = 200` при known unavailable live path;
+- QA-03 должен отличать mock success, controlled unavailable, no-result/insufficient input и настоящий live `recognition.result`.

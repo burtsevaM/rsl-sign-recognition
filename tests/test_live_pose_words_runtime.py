@@ -124,6 +124,14 @@ def active_manifest_path(tmp_path: Path) -> Path:
     return tmp_path / "artifacts/runtime/active/pose_words/manifest.json"
 
 
+def build_mock_settings(tmp_path: Path) -> RuntimeShellSettings:
+    return RuntimeShellSettings(
+        runtime_mode=RuntimeMode.MOCK,
+        repo_root=tmp_path,
+        active_manifest_path=active_manifest_path(tmp_path),
+    )
+
+
 def write_active_pack(
     tmp_path: Path,
     *,
@@ -407,7 +415,7 @@ def test_live_pose_words_runtime_does_not_fallback_to_validation_or_bootstrap(
         (
             ImportError("missing optional runtime dependency"),
             LivePoseWordsRuntimeStatus.UNAVAILABLE,
-            "pose_words_runtime_dependency_unavailable",
+            "inference_backend_unavailable",
             "exception:ImportError",
         ),
         (
@@ -419,13 +427,13 @@ def test_live_pose_words_runtime_does_not_fallback_to_validation_or_bootstrap(
         (
             ValueError("invalid runtime component"),
             LivePoseWordsRuntimeStatus.INVALID,
-            "pose_words_runtime_misconfigured",
+            "pose_words_runtime_config_invalid",
             "exception:ValueError",
         ),
         (
             TypeError("invalid runtime factory wiring"),
             LivePoseWordsRuntimeStatus.INVALID,
-            "pose_words_runtime_misconfigured",
+            "pose_words_runtime_config_invalid",
             "exception:TypeError",
         ),
     ],
@@ -467,10 +475,119 @@ def test_default_pose_words_pipeline_failure_is_controlled_without_onnxruntime(
 
     assert state.status is LivePoseWordsRuntimeStatus.INVALID
     assert state.available is False
-    assert "pose_words_runtime_misconfigured" in state.reason_codes
-    assert "exception:ValueError" in state.reason_codes
+    assert "pose_words_runtime_config_invalid" in state.reason_codes
+    assert "exception:PoseWordsRuntimeAssemblyError" in state.reason_codes
+    assert "cause:ValueError" in state.reason_codes
+    assert "phase:classifier_config" in state.reason_codes
     assert state.missing_artifacts == ()
     assert state.pipeline is None
+
+
+def test_pose_words_runtime_invalid_segmentation_config_is_controlled(
+    tmp_path: Path,
+) -> None:
+    write_active_pack(tmp_path, segmentation_runtime_config="{not-json")
+    service = LivePoseWordsRuntimeService.from_settings(
+        build_settings(tmp_path),
+        pipeline_factory=fake_pipeline_factory,
+    )
+
+    state = service.initialize()
+
+    assert state.status is LivePoseWordsRuntimeStatus.INVALID
+    assert state.available is False
+    assert "pose_words_runtime_config_invalid" in state.reason_codes
+    assert "exception:PoseWordsRuntimeAssemblyError" in state.reason_codes
+    assert "cause:JSONDecodeError" in state.reason_codes
+    assert "phase:runtime_config" in state.reason_codes
+    assert state.pipeline is None
+
+
+def test_pose_words_runtime_unavailable_when_inference_backend_is_missing(
+    tmp_path: Path,
+) -> None:
+    write_active_pack(tmp_path)
+
+    def classifier_backend_missing(**_kwargs: object):
+        raise ImportError("onnxruntime is not installed")
+
+    def pipeline_factory(artifacts):
+        return build_pose_words_runtime_pipeline(
+            artifacts,
+            extractor_factory=FakeExtractor,
+            classifier_factory=classifier_backend_missing,
+            segmenter_model_factory=FakeBioSegmenterModel,
+        )
+
+    service = LivePoseWordsRuntimeService.from_settings(
+        build_settings(tmp_path),
+        pipeline_factory=pipeline_factory,
+    )
+
+    state = service.initialize()
+
+    assert state.status is LivePoseWordsRuntimeStatus.UNAVAILABLE
+    assert state.available is False
+    assert "inference_backend_unavailable" in state.reason_codes
+    assert "cause:ImportError" in state.reason_codes
+    assert "phase:classifier_backend" in state.reason_codes
+    assert state.pipeline is None
+
+
+def test_pose_words_runtime_model_loading_error_is_controlled(
+    tmp_path: Path,
+) -> None:
+    write_active_pack(tmp_path)
+
+    def classifier_model_load_failed(**_kwargs: object):
+        raise RuntimeError("ONNX session could not load model")
+
+    def pipeline_factory(artifacts):
+        return build_pose_words_runtime_pipeline(
+            artifacts,
+            extractor_factory=FakeExtractor,
+            classifier_factory=classifier_model_load_failed,
+            segmenter_model_factory=FakeBioSegmenterModel,
+        )
+
+    service = LivePoseWordsRuntimeService.from_settings(
+        build_settings(tmp_path),
+        pipeline_factory=pipeline_factory,
+    )
+
+    state = service.initialize()
+
+    assert state.status is LivePoseWordsRuntimeStatus.INVALID
+    assert state.available is False
+    assert "pose_words_model_loading_failed" in state.reason_codes
+    assert "cause:RuntimeError" in state.reason_codes
+    assert "phase:classifier_model" in state.reason_codes
+    assert state.pipeline is None
+
+
+def test_mock_runtime_mode_does_not_make_live_pose_words_runtime_available(
+    tmp_path: Path,
+) -> None:
+    write_active_pack(tmp_path)
+
+    def fail_if_called(_artifacts):
+        raise AssertionError("mock mode must not assemble live runtime")
+
+    service = LivePoseWordsRuntimeService.from_settings(
+        build_mock_settings(tmp_path),
+        pipeline_factory=fail_if_called,
+    )
+
+    state = service.initialize()
+    result = service.create_session()
+
+    assert state.status is LivePoseWordsRuntimeStatus.UNAVAILABLE
+    assert state.reason_codes == ("runtime_mode_not_live",)
+    assert state.pipeline is None
+    assert state.available is False
+    assert result.created is False
+    assert result.status is LivePoseWordsRuntimeStatus.UNAVAILABLE
+    assert result.session is None
 
 
 def test_pose_words_session_starts_initialized_with_empty_buffer(

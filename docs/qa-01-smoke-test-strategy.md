@@ -211,7 +211,9 @@ Backend smoke обязан явно разводить:
 - `process alive` и `runtime ready`;
 - `mock available` и `live runtime ready`;
 - `transport surface exists` и `runtime behavior hardened`;
-- `session-level runtime_unavailable` и `pre-session readiness failure`.
+- `session-level runtime_unavailable` и `pre-session readiness failure`;
+- `runtime_unavailable` и domain-level `no_result` вроде `empty_buffer` / `insufficient_buffer`;
+- mock `recognition.result` fixture и настоящий live `recognition.result`.
 
 Без этого smoke contour будет вводить новый смысл readiness и противоречить `RT-02`.
 
@@ -297,6 +299,8 @@ Automated smoke checks проверяют:
 - минимальную `WS /ws/stream` session: `control.clear_text` возвращает `control.ack`, а binary JPEG frame без live pipeline возвращает contract-shaped `runtime_unavailable`;
 - negative WebSocket paths для malformed JSON control message (`invalid_json`), несовместимого `contract_version` (`unsupported_contract_version`), неизвестного control action (`unsupported_control_action`) и invalid binary frame (`frame_decode_failed`);
 - mock/live boundary: `runtime_mode = "mock"` не делает `/ready` live-ready даже при валидном active manifest.
+- service-level `runtime.pose_words` checks для missing active manifest, missing required artifact, invalid manifest path, invalid runtime config, missing inference backend, model loading failure и mock-mode boundary;
+- session-level `runtime.pose_words` checks для `empty_buffer` и `insufficient_buffer` как controlled `no_result`, а не `runtime_unavailable`.
 
 Эти checks согласованы с `ART-02`: active artifact loader может закрыть только `active_artifacts` gate. Наличие валидного manifest и placeholder required files в тесте не означает production artifacts и не запускает ONNX sessions.
 
@@ -308,10 +312,12 @@ Manual checks остаются обязательными для сценари�
 - проверить `GET /ready` и убедиться, что `HTTP 503` объяснен readiness `gates` / `reason_codes`, а не маскируется под успешную live readiness;
 - открыть минимальную WebSocket session на `WS /ws/stream`, отправить `control.clear_text` и убедиться в `control.ack`;
 - отправить binary JPEG frame и трактовать `runtime_unavailable` как честный session-level signal отсутствующего live pipeline;
+- в service-level runtime checks отдельно проверить, что missing/invalid artifacts, invalid config, model loading failure и missing inference backend возвращают controlled state и не создают fake word/confidence;
+- отдельно проверить, что пустой или недостаточный buffer возвращает `no_result` (`empty_buffer` / `insufficient_buffer`), а не `runtime_unavailable`;
 - отдельно подтвердить, что validation/bootstrap artifacts не подменяют `artifacts/runtime/active/pose_words/manifest.json`;
 - после будущего подключения live runtime проверить, что session использует active runtime path, а не hidden fallback или mock source.
 
-Full e2e/live recognition не входит в `QA-02`, потому что для него нужны отдельные future tasks: wiring `PW-05` / `PW-04` / `PW-03` в live WebSocket pipeline, реальные active ONNX artifacts, startup/runtime hooks и manual integration validation с web team.
+Full e2e/live recognition не входит в `QA-02` / `RT-10`, потому что для него нужны отдельные future tasks: wiring `PW-05` / `PW-04` / `PW-03` в live WebSocket pipeline, реальные active ONNX artifacts, startup/runtime hooks и manual integration validation с web team. Successful mock smoke по-прежнему не доказывает live recognition.
 
 ## 10. Non-goals и ограничения
 

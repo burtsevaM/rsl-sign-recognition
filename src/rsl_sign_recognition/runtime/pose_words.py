@@ -15,6 +15,7 @@ import numpy as np
 from rsl_sign_recognition.pipelines.pose_words.clip import resample_to_fixed_T
 from rsl_sign_recognition.pipelines.pose_words.runtime import (
     PoseWordsRuntimePipeline,
+    PoseWordsRuntimeAssemblyError,
     build_pose_words_runtime_pipeline,
 )
 from rsl_sign_recognition.runtime.artifacts import (
@@ -315,10 +316,17 @@ class LivePoseWordsRuntimeService:
 
         try:
             pipeline = self.pipeline_factory(artifacts)
+        except PoseWordsRuntimeAssemblyError as exc:
+            return self._component_failure_state(
+                artifacts,
+                exc.reason_code,
+                exc,
+                status=_status_for_pipeline_failure(exc.reason_code),
+            )
         except ImportError as exc:
             return self._component_failure_state(
                 artifacts,
-                "pose_words_runtime_dependency_unavailable",
+                "inference_backend_unavailable",
                 exc,
                 status=LivePoseWordsRuntimeStatus.UNAVAILABLE,
             )
@@ -329,10 +337,17 @@ class LivePoseWordsRuntimeService:
                 exc,
                 status=LivePoseWordsRuntimeStatus.UNAVAILABLE,
             )
-        except (OSError, ValueError, TypeError) as exc:
+        except (OSError, RuntimeError) as exc:
             return self._component_failure_state(
                 artifacts,
-                "pose_words_runtime_misconfigured",
+                "pose_words_model_loading_failed",
+                exc,
+                status=LivePoseWordsRuntimeStatus.INVALID,
+            )
+        except (ValueError, TypeError) as exc:
+            return self._component_failure_state(
+                artifacts,
+                "pose_words_runtime_config_invalid",
                 exc,
                 status=LivePoseWordsRuntimeStatus.INVALID,
             )
@@ -348,6 +363,10 @@ class LivePoseWordsRuntimeService:
         status: LivePoseWordsRuntimeStatus,
     ) -> LivePoseWordsRuntimeState:
         metadata: dict[str, Any] = {"exception": type(exc).__name__}
+        if isinstance(exc, PoseWordsRuntimeAssemblyError):
+            metadata["phase"] = exc.phase
+            if exc.__cause__ is not None:
+                metadata["cause_exception"] = type(exc.__cause__).__name__
         if str(exc):
             metadata["message"] = str(exc)
         reason_codes = (reason_code, *_metadata_reason_codes(metadata))
@@ -413,10 +432,22 @@ class LivePoseWordsRuntimeService:
 
         try:
             pipeline = self.pipeline_factory(artifacts)
+        except PoseWordsRuntimeAssemblyError as exc:
+            failure = self._component_failure_state(
+                artifacts,
+                exc.reason_code,
+                exc,
+                status=_status_for_pipeline_failure(exc.reason_code),
+            )
+            return PoseWordsSessionCreateResult(
+                status=failure.status,
+                reason_codes=failure.reason_codes,
+                runtime_state=failure,
+            )
         except ImportError as exc:
             failure = self._component_failure_state(
                 artifacts,
-                "pose_words_runtime_dependency_unavailable",
+                "inference_backend_unavailable",
                 exc,
                 status=LivePoseWordsRuntimeStatus.UNAVAILABLE,
             )
@@ -437,10 +468,22 @@ class LivePoseWordsRuntimeService:
                 reason_codes=failure.reason_codes,
                 runtime_state=failure,
             )
-        except (OSError, ValueError, TypeError) as exc:
+        except (OSError, RuntimeError) as exc:
             failure = self._component_failure_state(
                 artifacts,
-                "pose_words_runtime_misconfigured",
+                "pose_words_model_loading_failed",
+                exc,
+                status=LivePoseWordsRuntimeStatus.INVALID,
+            )
+            return PoseWordsSessionCreateResult(
+                status=failure.status,
+                reason_codes=failure.reason_codes,
+                runtime_state=failure,
+            )
+        except (ValueError, TypeError) as exc:
+            failure = self._component_failure_state(
+                artifacts,
+                "pose_words_runtime_config_invalid",
                 exc,
                 status=LivePoseWordsRuntimeStatus.INVALID,
             )
@@ -739,11 +782,29 @@ def _status_for_artifact_error(
     return LivePoseWordsRuntimeStatus.INVALID
 
 
+def _status_for_pipeline_failure(reason_code: str) -> LivePoseWordsRuntimeStatus:
+    unavailable = {
+        "inference_backend_unavailable",
+        "pose_extraction_backend_unavailable",
+        "pose_words_runtime_component_missing",
+    }
+    if reason_code in unavailable:
+        return LivePoseWordsRuntimeStatus.UNAVAILABLE
+    return LivePoseWordsRuntimeStatus.INVALID
+
+
 def _metadata_reason_codes(metadata: dict[str, Any]) -> tuple[str, ...]:
+    reason_codes: list[str] = []
     exception_name = metadata.get("exception")
-    if not isinstance(exception_name, str) or not exception_name:
-        return ()
-    return (f"exception:{exception_name}",)
+    if isinstance(exception_name, str) and exception_name:
+        reason_codes.append(f"exception:{exception_name}")
+    cause_exception = metadata.get("cause_exception")
+    if isinstance(cause_exception, str) and cause_exception:
+        reason_codes.append(f"cause:{cause_exception}")
+    phase = metadata.get("phase")
+    if isinstance(phase, str) and phase:
+        reason_codes.append(f"phase:{phase}")
+    return tuple(reason_codes)
 
 
 __all__ = [
