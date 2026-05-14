@@ -30,6 +30,21 @@ from rsl_sign_recognition.segmentation.streaming import (
 )
 
 
+class PoseWordsRuntimeAssemblyError(RuntimeError):
+    """Controlled failure while assembling the live pose_words runtime path."""
+
+    def __init__(
+        self,
+        reason_code: str,
+        message: str,
+        *,
+        phase: str,
+    ) -> None:
+        super().__init__(message)
+        self.reason_code = reason_code
+        self.phase = phase
+
+
 class PoseWordsClassifier(Protocol):
     labels: list[str]
     input_clip_frames: int | None
@@ -84,40 +99,113 @@ def build_pose_words_runtime_pipeline(
     classifier_factory = classifier_factory or PoseWordOnnxModel
     segmenter_model_factory = segmenter_model_factory or BioSegmenterOnnxModel
 
-    classifier = classifier_factory(
-        model_path=artifacts.classifier_model_path,
-        labels_path=artifacts.classifier_labels_path,
-        config_path=artifacts.classifier_config_path,
-        ort_num_threads=1,
-    )
-    segmentation_model = segmenter_model_factory(
-        model_path=artifacts.segmentation_model_path,
-        config_path=artifacts.segmentation_config_path,
-        ort_num_threads=1,
-    )
-    extractor = extractor_factory()
+    try:
+        classifier = classifier_factory(
+            model_path=artifacts.classifier_model_path,
+            labels_path=artifacts.classifier_labels_path,
+            config_path=artifacts.classifier_config_path,
+            ort_num_threads=1,
+        )
+    except ImportError as exc:
+        raise _assembly_error(
+            "inference_backend_unavailable",
+            "classifier_backend",
+            exc,
+        ) from exc
+    except FileNotFoundError as exc:
+        raise _assembly_error(
+            "pose_words_runtime_component_missing",
+            "classifier_artifacts",
+            exc,
+        ) from exc
+    except (OSError, RuntimeError) as exc:
+        raise _assembly_error(
+            "pose_words_model_loading_failed",
+            "classifier_model",
+            exc,
+        ) from exc
+    except (TypeError, ValueError) as exc:
+        raise _assembly_error(
+            "pose_words_runtime_config_invalid",
+            "classifier_config",
+            exc,
+        ) from exc
+
+    try:
+        segmentation_model = segmenter_model_factory(
+            model_path=artifacts.segmentation_model_path,
+            config_path=artifacts.segmentation_config_path,
+            ort_num_threads=1,
+        )
+    except ImportError as exc:
+        raise _assembly_error(
+            "inference_backend_unavailable",
+            "segmentation_backend",
+            exc,
+        ) from exc
+    except FileNotFoundError as exc:
+        raise _assembly_error(
+            "pose_words_runtime_component_missing",
+            "segmentation_artifacts",
+            exc,
+        ) from exc
+    except (OSError, RuntimeError) as exc:
+        raise _assembly_error(
+            "pose_words_model_loading_failed",
+            "segmentation_model",
+            exc,
+        ) from exc
+    except (TypeError, ValueError) as exc:
+        raise _assembly_error(
+            "pose_words_runtime_config_invalid",
+            "segmentation_config",
+            exc,
+        ) from exc
+
+    try:
+        extractor = extractor_factory()
+    except (ImportError, OSError, RuntimeError) as exc:
+        raise _assembly_error(
+            "pose_extraction_backend_unavailable",
+            "pose_extraction_backend",
+            exc,
+        ) from exc
+    except (TypeError, ValueError) as exc:
+        raise _assembly_error(
+            "pose_words_runtime_config_invalid",
+            "pose_extraction_config",
+            exc,
+        ) from exc
+
     pose_features = PoseFeatureService(extractor=extractor)
 
-    feature_dim = _resolve_feature_dim(classifier, segmentation_model)
-    clip_frames = _resolve_clip_frames(classifier)
-    thresholds = load_bio_thresholds(artifacts.segmentation_thresholds_path)
-    segmentation_config = _read_optional_json(artifacts.segmentation_config_path)
-    window = _positive_int(segmentation_config.get("window_size"), default=64)
+    try:
+        feature_dim = _resolve_feature_dim(classifier, segmentation_model)
+        clip_frames = _resolve_clip_frames(classifier)
+        thresholds = load_bio_thresholds(artifacts.segmentation_thresholds_path)
+        segmentation_config = _read_optional_json(artifacts.segmentation_config_path)
+        window = _positive_int(segmentation_config.get("window_size"), default=64)
 
-    segmenter = StreamingBioSegmenter(
-        model=segmentation_model,
-        window=window,
-        step=_positive_int(segmentation_config.get("step"), default=8),
-        min_len=_positive_int(
-            segmentation_config.get("min_segment_len"),
-            default=1,
-        ),
-        sign_th_b=thresholds.sign_th_b,
-        sign_th_o=thresholds.sign_th_o,
-        phrase_th_b=thresholds.phrase_th_b,
-        phrase_th_o=thresholds.phrase_th_o,
-        feature_dim=feature_dim,
-    )
+        segmenter = StreamingBioSegmenter(
+            model=segmentation_model,
+            window=window,
+            step=_positive_int(segmentation_config.get("step"), default=8),
+            min_len=_positive_int(
+                segmentation_config.get("min_segment_len"),
+                default=1,
+            ),
+            sign_th_b=thresholds.sign_th_b,
+            sign_th_o=thresholds.sign_th_o,
+            phrase_th_b=thresholds.phrase_th_b,
+            phrase_th_o=thresholds.phrase_th_o,
+            feature_dim=feature_dim,
+        )
+    except (TypeError, ValueError) as exc:
+        raise _assembly_error(
+            "pose_words_runtime_config_invalid",
+            "runtime_config",
+            exc,
+        ) from exc
 
     return PoseWordsRuntimePipeline(
         artifacts=artifacts,
@@ -182,9 +270,23 @@ def _positive_int(value: object, *, default: int) -> int:
     return default
 
 
+def _assembly_error(
+    reason_code: str,
+    phase: str,
+    exc: BaseException,
+) -> PoseWordsRuntimeAssemblyError:
+    message = str(exc) or type(exc).__name__
+    return PoseWordsRuntimeAssemblyError(
+        reason_code,
+        f"{phase} failed: {message}",
+        phase=phase,
+    )
+
+
 __all__ = [
     "ClassifierFactory",
     "ExtractorFactory",
+    "PoseWordsRuntimeAssemblyError",
     "PoseWordsClassifier",
     "PoseWordsRuntimePipeline",
     "SegmenterModelFactory",

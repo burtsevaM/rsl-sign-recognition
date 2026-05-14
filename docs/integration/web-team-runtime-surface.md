@@ -142,6 +142,8 @@ curl -i http://localhost:8000/health
 
 Важно: искусственно делать `/ready = 200` нельзя. Отсутствие live pipeline или active artifacts должно оставаться видимым через `HTTP 503`, gates и reason codes.
 
+Для будущей RT-07 интеграции `/ready` должен оставаться pre-session truth. Если active manifest отсутствует, manifest невалиден, required artifact file отсутствует, runtime config невалиден, model loading падает или inference backend недоступен, web team должна видеть controlled `not_ready` / reason codes, а не successful live recognition. `contract v1` для WebSocket от этого не меняется.
+
 ## 5. `WS /ws/stream`: contract v1 expectations
 
 Web team открывает WebSocket session по пути:
@@ -260,6 +262,13 @@ Frontend должен корректно обрабатывать:
 
 Это честная граница отсутствующего live runtime pipeline. Это не failure web-интеграции и не сигнал, что нужно изобретать mock-only success в live path.
 
+Web team должна трактовать `runtime_unavailable` как controlled unavailable state:
+
+- не показывать его как распознанное слово;
+- не считать его `recognition.result`;
+- не подставлять mock result вместо live result;
+- не считать `empty_buffer` / `insufficient_buffer` тем же состоянием, если будущий live transport сможет вернуть controlled no-result до накопления достаточного input.
+
 ## 6. Mock/live boundary
 
 ### Mock / current limited behavior
@@ -283,6 +292,8 @@ Mock/current limited behavior не закрывает:
 - classifier inference;
 - frame-to-result correlation;
 - production readiness.
+
+Successful mock smoke доказывает только parsing, UI state handling и совместимость с documented fixtures. Он не доказывает, что active artifacts, runtime config, model loading, inference backend или live recognition доступны.
 
 ### Live behavior
 

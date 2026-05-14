@@ -144,6 +144,19 @@ Bootstrap contour может существовать, но:
 - не должен подменять live-ready active profile;
 - не должен silently загружаться runtime вместо отсутствующего active profile.
 
+## 6.4. Controlled failure semantics для runtime load path
+
+Active artifact policy связана с RT-10 controlled failure semantics:
+
+- отсутствующий `artifacts/runtime/active/pose_words/manifest.json` означает controlled `active_manifest_missing`;
+- невалидный manifest, неверные profile markers, absolute paths и path traversal означают controlled invalid manifest state;
+- отсутствующий required artifact file означает controlled `active_required_artifacts_missing`;
+- optional companion config не обязан существовать, если manifest не помечает его как `required`;
+- если runtime config, thresholds, labels или model metadata невалидны уже во время assembly, service boundary должен вернуть controlled invalid state, а не successful recognition;
+- validation/bootstrap paths не могут подменять missing active profile и не должны превращать unavailable live path в mock success.
+
+Эти состояния закрывают artifact/runtime boundary. Они не меняют `contract v1`, не добавляют WebSocket fields и не доказывают production-ready live recognition.
+
 ## 7. Expected manifest contract
 
 Active manifest должен быть **самодостаточной точкой правды** для clean runtime path.
