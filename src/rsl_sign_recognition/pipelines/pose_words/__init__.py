@@ -30,6 +30,10 @@ from rsl_sign_recognition.pipelines.pose_words.service import (
     PoseFeatureService,
     PoseFeatureServiceConfig,
 )
+from rsl_sign_recognition.pipelines.pose_words.runtime import (
+    PoseWordsRuntimePipeline,
+    build_pose_words_runtime_pipeline,
+)
 
 __all__ = [
     "BODY_LANDMARK_COUNT",
@@ -43,9 +47,11 @@ __all__ = [
     "PoseFeatureResult",
     "PoseFeatureService",
     "PoseFeatureServiceConfig",
+    "PoseWordsRuntimePipeline",
     "PoseFrame",
     "PoseLandmarksGroup",
     "ShoulderNormInfo",
+    "build_pose_words_runtime_pipeline",
     "compose_features",
     "compose_features_sequence",
     "hand_normalize_3d",

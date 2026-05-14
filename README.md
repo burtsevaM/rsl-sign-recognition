@@ -2,7 +2,7 @@
 
 `rsl-sign-recognition` — clean repository для ML-модуля распознавания РЖЯ в сценарии sign-to-text. Его задача — стать местом для воспроизводимого runtime-контура, интеграционного контракта, runtime-facing документации и поэтапной миграции из draft-репозитория в более чистую долгоживущую структуру.
 
-На текущем этапе репозиторий уже содержит **минимальный FastAPI runtime shell** для `/health`, `/ready` и transport-level `WS /ws/stream`, не подключенный к transport слой `PW-05` для pose extraction / normalization / feature composition, изолированный `PW-04` segmentation runtime layer для BIO boundaries поверх feature vectors, изолированный `PW-03` classifier wrapper для `pose_words` feature clips, `ART-02` active artifact manifest reader / loader для clean runtime path и минимальный `ART-03` active artifact pack для `pose_words`. Репозиторий по-прежнему не содержит полного end-to-end inference/runtime-контура, live inference pipeline, production-quality model proof, training/export-кода и operational scripts.
+На текущем этапе репозиторий уже содержит **минимальный FastAPI runtime shell** для `/health`, `/ready` и transport-level `WS /ws/stream`, не подключенный к transport слой `PW-05` для pose extraction / normalization / feature composition, изолированный `PW-04` segmentation runtime layer для BIO boundaries поверх feature vectors, изолированный `PW-03` classifier wrapper для `pose_words` feature clips, `ART-02` active artifact manifest reader / loader для clean runtime path, минимальный `ART-03` active artifact pack для `pose_words` и service-level `RT-08` orchestrator, который собирает live `pose_words` runtime path без WebSocket wiring. Репозиторий по-прежнему не содержит полного end-to-end inference/runtime-контура, подключенного live inference pipeline, production-quality model proof, training/export-кода и operational scripts.
 
 ## Что это за репозиторий
 
@@ -37,6 +37,7 @@
 - `PW-03` слой `inference.pose_words` для ONNX classifier inference поверх уже подготовленного feature clip `[T, F]` без подключения к `/ws/stream`;
 - `ART-02` слой `runtime.artifacts` для чтения active manifest, проверки обязательных classifier/segmentation files и безопасного разрешения artifact paths без запуска ONNX sessions;
 - `ART-03` минимальный active artifact pack `artifacts/runtime/active/pose_words/` для закрытия `active_artifacts` gate на уровне manifest + required files;
+- `RT-08` service-level `runtime.pose_words` orchestrator для сборки live `pose_words` path через active artifact loader, `PW-05`, `PW-04` и `PW-03` без подключения к `WS /ws/stream`;
 - foundation CI skeleton для `push` и `pull_request`;
 - PR template и issue templates;
 - каноническая система milestones, epics, labels и task-кодов.
@@ -101,7 +102,7 @@
 - `MIG-02` — controlled migration governance для `PW-05`, `PW-03`, `PW-04` и `ART-02`;
 - `QA-01` и `INT-01` — smoke/integration strategy и handoff notes.
 
-Текущий clean contour ограничен минимальным probe-level shell, изолированным `PW-05` pose feature layer, изолированным `PW-04` segmentation layer, изолированным `PW-03` pose_words classifier wrapper, `ART-02` active artifact loader/readiness gate и `ART-03` минимальным technical active pack. Validation workflows, bootstrap/fallback path, training/export, dataset generation, broader artifact lifecycle и machine-local operational runbooks остаются в `gesture-recognition-draft` до отдельных migration tasks.
+Текущий clean contour ограничен минимальным probe-level shell, изолированным `PW-05` pose feature layer, изолированным `PW-04` segmentation layer, изолированным `PW-03` pose_words classifier wrapper, `ART-02` active artifact loader/readiness gate, `ART-03` минимальным technical active pack и service-level `RT-08` orchestration boundary без WebSocket transport. Validation workflows, bootstrap/fallback path, training/export, dataset generation, broader artifact lifecycle и machine-local operational runbooks остаются в `gesture-recognition-draft` до отдельных migration tasks.
 
 ## PW-05 Pose Feature Runtime Layer
 
@@ -151,6 +152,19 @@ Loader валидирует JSON shape, profile markers, descriptors и безо
 
 Этот слой не создает ONNX sessions, не импортирует `onnxruntime` или MediaPipe, не копирует bootstrap files, не читает draft `backend/config.yaml` и не сканирует `artifacts/validation/...` или `artifacts/bootstrap/...` как fallback. Даже если `active_artifacts=true`, `/ready` остается `503`, пока `transport_surface=false` из-за отсутствующего live runtime pipeline.
 
+## RT-08 Live Pose Words Runtime Service
+
+В clean repo появился service-level слой `rsl_sign_recognition.runtime.pose_words`:
+
+- `LivePoseWordsRuntimeService.initialize()` собирает live `pose_words` path через `RuntimeShellSettings.active_manifest_path`;
+- runtime path использует `ActiveArtifactLoader`, manifest-relative artifact paths, `PoseFeatureService`, `StreamingBioSegmenter`, `BioSegmenterOnnxModel` и `PoseWordOnnxModel`;
+- `pipelines.pose_words.runtime` отвечает за composition конкретного `pose_words` path, а `runtime.pose_words` — за controlled service state;
+- отсутствующий manifest или missing required artifact возвращают `status="unavailable"` с предсказуемыми reason codes;
+- некорректный manifest или misconfigured components возвращают `status="invalid"`;
+- validation/bootstrap directories, draft `config.yaml` и hardcoded model paths не используются как fallback.
+
+Этот слой не подключает `WS /ws/stream`, не меняет WebSocket contract v1, не добавляет external protocol и не делает `/ready` зеленым сам по себе. Он закрывает backend service boundary для дальнейших RT-09/RT-10 работ над session state и controlled failure semantics.
+
 ## Minimal Runtime Shell
 
 В clean repo теперь есть минимальный FastAPI runtime shell:
@@ -170,7 +184,7 @@ Loader валидирует JSON shape, profile markers, descriptors и безо
 - не объявляет `/ready = 200`, пока не закрыты `runtime_shell`, `active_artifacts` и `transport_surface`;
 - не имитирует `recognition.result`, если live runtime pipeline отсутствует.
 
-`/ready` уже использует active artifact gate: missing manifest, invalid manifest, non-active profile или missing required files переводят `active_artifacts` в `false`. ART-03 добавляет минимальный technical active pack, поэтому `active_artifacts` может стать `true` при наличии committed required files; `LiveTransportSurface.evaluate()` по-прежнему возвращает `live_runtime_pipeline_unavailable`, и общий `/ready` остается `HTTP 503`, пока live transport/runtime pipeline не собран.
+`/ready` уже использует active artifact gate: missing manifest, invalid manifest, non-active profile или missing required files переводят `active_artifacts` в `false`. ART-03 добавляет минимальный technical active pack, поэтому `active_artifacts` может стать `true` при наличии committed required files; RT-08 добавляет service-level сборку `pose_words` path без transport wiring; `LiveTransportSurface.evaluate()` по-прежнему возвращает `live_runtime_pipeline_unavailable`, и общий `/ready` остается `HTTP 503`, пока live transport/runtime pipeline не подключен к transport surface отдельной задачей.
 
 Пример локального запуска:
 
