@@ -130,12 +130,7 @@ class PoseWordsFeatureBuffer:
                 f"got {feature.shape[0]}"
             )
         if not np.all(np.isfinite(feature)):
-            feature = np.nan_to_num(
-                feature,
-                nan=0.0,
-                posinf=0.0,
-                neginf=0.0,
-            ).astype(np.float32)
+            raise ValueError("feature vector must contain only finite values")
         return np.ascontiguousarray(feature, dtype=np.float32)
 
 
@@ -538,6 +533,8 @@ class PoseWordsLiveSession:
             pose_result = self.pipeline.pose_features.process_rgb_frame(rgb_frame)
         except (TypeError, ValueError) as exc:
             return self._error("invalid_rgb_frame", exception=exc)
+        except (RuntimeError, OSError) as exc:
+            return self._error("pose_feature_runtime_failed", exception=exc)
 
         if pose_result.feature_vector is None:
             reason = pose_result.aux.get("reason")

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import inspect
+from dataclasses import replace
 from pathlib import Path
 from typing import Any
 
@@ -58,6 +59,14 @@ class FakeClassifier:
 class FakeRecognizingClassifier(FakeClassifier):
     def infer_probs(self, features_tf: np.ndarray) -> tuple[np.ndarray, float]:
         return np.asarray([0.05, 0.9, 0.05], dtype=np.float32), 3.0
+
+
+class FakeFailingPoseFeatureService:
+    def __init__(self, exc: Exception) -> None:
+        self.exc = exc
+
+    def process_rgb_frame(self, rgb_frame: np.ndarray):
+        raise self.exc
 
 
 class FakeBioSegmenterModel:
@@ -227,6 +236,17 @@ def fake_pipeline_factory_with_recognition(artifacts):
         classifier_factory=FakeRecognizingClassifier,
         segmenter_model_factory=FakeCompletedSegmenterModel,
     )
+
+
+def fake_pipeline_factory_with_pose_feature_error(exc: Exception):
+    def factory(artifacts):
+        pipeline = fake_pipeline_factory(artifacts)
+        return replace(
+            pipeline,
+            pose_features=FakeFailingPoseFeatureService(exc),
+        )
+
+    return factory
 
 
 def create_session(
@@ -578,6 +598,53 @@ def test_pose_words_session_pose_not_detected_is_no_result(tmp_path: Path) -> No
     assert event.status is PoseWordsRuntimeEventStatus.NO_RESULT
     assert event.reason_code == "pose_not_detected"
     assert event.hand_present is False
+    assert event.buffer.empty is True
+
+
+@pytest.mark.parametrize(
+    ("exc", "expected_exception"),
+    [
+        (RuntimeError("pose backend crashed"), "RuntimeError"),
+        (OSError("pose backend unavailable"), "OSError"),
+    ],
+)
+def test_pose_words_session_controls_pose_feature_runtime_failures(
+    tmp_path: Path,
+    exc: Exception,
+    expected_exception: str,
+) -> None:
+    session = create_session(
+        tmp_path,
+        pipeline_factory=fake_pipeline_factory_with_pose_feature_error(exc),
+    )
+    rgb = np.zeros((8, 8, 3), dtype=np.uint8)
+
+    event = session.push_frame(rgb)
+
+    assert event.status is PoseWordsRuntimeEventStatus.ERROR
+    assert event.reason_code == "pose_feature_runtime_failed"
+    assert event.details["exception"] == expected_exception
+    assert event.details["message"] == str(exc)
+    assert event.buffer.empty is True
+
+
+@pytest.mark.parametrize(
+    "bad_value",
+    [np.nan, np.inf, -np.inf],
+)
+def test_pose_words_session_rejects_non_finite_feature_values(
+    tmp_path: Path,
+    bad_value: float,
+) -> None:
+    session = create_session(tmp_path)
+    feature = np.ones(159, dtype=np.float32)
+    feature[3] = bad_value
+
+    event = session.push_feature(feature)
+
+    assert event.status is PoseWordsRuntimeEventStatus.ERROR
+    assert event.reason_code == "invalid_feature_vector"
+    assert event.details["exception"] == "ValueError"
     assert event.buffer.empty is True
 
 
