@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import inspect
 from pathlib import Path
 from typing import Any
 
@@ -14,6 +15,8 @@ from rsl_sign_recognition.runtime.config import RuntimeMode, RuntimeShellSetting
 from rsl_sign_recognition.runtime.pose_words import (
     LivePoseWordsRuntimeService,
     LivePoseWordsRuntimeStatus,
+    PoseWordsRuntimeEventStatus,
+    PoseWordsSessionStatus,
 )
 
 
@@ -52,6 +55,11 @@ class FakeClassifier:
         return 0
 
 
+class FakeRecognizingClassifier(FakeClassifier):
+    def infer_probs(self, features_tf: np.ndarray) -> tuple[np.ndarray, float]:
+        return np.asarray([0.05, 0.9, 0.05], dtype=np.float32), 3.0
+
+
 class FakeBioSegmenterModel:
     def __init__(
         self,
@@ -73,6 +81,28 @@ class FakeBioSegmenterModel:
         return probs, probs.copy(), 0.0
 
 
+class FakeCompletedSegmenterModel(FakeBioSegmenterModel):
+    def infer(self, features_tf: np.ndarray) -> tuple[np.ndarray, np.ndarray, float]:
+        length = int(features_tf.shape[0])
+        sign = np.zeros((length, 3), dtype=np.float32)
+        phrase = np.zeros((length, 3), dtype=np.float32)
+        sign[:, 2] = 1.0
+        phrase[:, 2] = 1.0
+        sign[0, :] = np.asarray([1.0, 0.0, 0.0], dtype=np.float32)
+        return sign, phrase, 1.0
+
+
+class FakeActiveSegmenterModel(FakeBioSegmenterModel):
+    def infer(self, features_tf: np.ndarray) -> tuple[np.ndarray, np.ndarray, float]:
+        length = int(features_tf.shape[0])
+        sign = np.zeros((length, 3), dtype=np.float32)
+        phrase = np.zeros((length, 3), dtype=np.float32)
+        sign[:, 1] = 1.0
+        sign[0, :] = np.asarray([1.0, 0.0, 0.0], dtype=np.float32)
+        phrase[:, 2] = 1.0
+        return sign, phrase, 1.0
+
+
 def build_settings(tmp_path: Path) -> RuntimeShellSettings:
     return RuntimeShellSettings(
         runtime_mode=RuntimeMode.LIVE,
@@ -91,6 +121,7 @@ def write_active_pack(
     skip_required: str | None = None,
     empty_labels: bool = False,
     files: dict[str, object] | None = None,
+    segmentation_runtime_config: str = '{"window_size": 64}',
 ) -> Path:
     manifest_path = active_manifest_path(tmp_path)
     root = manifest_path.parent
@@ -132,7 +163,7 @@ def write_active_pack(
             labels = "" if empty_labels else "_no_event\nпривет\nпока\n"
             artifact_path.write_text(labels, encoding="utf-8")
         elif name.endswith("config"):
-            artifact_path.write_text('{"window_size": 64}', encoding="utf-8")
+            artifact_path.write_text(segmentation_runtime_config, encoding="utf-8")
         elif name == "segmentation_thresholds":
             artifact_path.write_text(
                 '{"sign": {"th_b": 0.5, "th_o": 0.5}, '
@@ -171,6 +202,55 @@ def fake_pipeline_factory(artifacts):
     )
 
 
+def fake_pipeline_factory_with_completed_segments(artifacts):
+    return build_pose_words_runtime_pipeline(
+        artifacts,
+        extractor_factory=FakeExtractor,
+        classifier_factory=FakeClassifier,
+        segmenter_model_factory=FakeCompletedSegmenterModel,
+    )
+
+
+def fake_pipeline_factory_with_active_segment(artifacts):
+    return build_pose_words_runtime_pipeline(
+        artifacts,
+        extractor_factory=FakeExtractor,
+        classifier_factory=FakeClassifier,
+        segmenter_model_factory=FakeActiveSegmenterModel,
+    )
+
+
+def fake_pipeline_factory_with_recognition(artifacts):
+    return build_pose_words_runtime_pipeline(
+        artifacts,
+        extractor_factory=FakeExtractor,
+        classifier_factory=FakeRecognizingClassifier,
+        segmenter_model_factory=FakeCompletedSegmenterModel,
+    )
+
+
+def create_session(
+    tmp_path: Path,
+    *,
+    pipeline_factory=fake_pipeline_factory,
+    max_buffer: int = 4,
+):
+    write_active_pack(
+        tmp_path,
+        segmentation_runtime_config=(
+            '{"window_size": 2, "step": 1, "min_segment_len": 1}'
+        ),
+    )
+    service = LivePoseWordsRuntimeService.from_settings(
+        build_settings(tmp_path),
+        pipeline_factory=pipeline_factory,
+    )
+    result = service.create_session(max_buffer=max_buffer)
+    assert result.created
+    assert result.session is not None
+    return result.session
+
+
 # RT-08 validates service-level orchestration. The happy path uses fake model
 # wrappers so this test does not become an ONNXRuntime/live inference proof.
 def test_live_pose_words_runtime_initializes_from_active_manifest(
@@ -188,6 +268,7 @@ def test_live_pose_words_runtime_initializes_from_active_manifest(
     assert state.available is True
     assert state.reason_codes == ()
     assert state.profile_id == "runtime_active"
+    assert "pose_words_session_state" in state.components
     assert state.pipeline is not None
     assert state.pipeline.classifier.model_path == (
         active_manifest_path(tmp_path).parent / "classifier/model.onnx"
@@ -370,3 +451,220 @@ def test_default_pose_words_pipeline_failure_is_controlled_without_onnxruntime(
     assert "exception:ValueError" in state.reason_codes
     assert state.missing_artifacts == ()
     assert state.pipeline is None
+
+
+def test_pose_words_session_starts_initialized_with_empty_buffer(
+    tmp_path: Path,
+) -> None:
+    session = create_session(tmp_path)
+
+    snapshot = session.snapshot()
+
+    assert snapshot.status is PoseWordsSessionStatus.INITIALIZED
+    assert snapshot.buffer.empty is True
+    assert snapshot.buffer.length == 0
+    assert snapshot.buffer.next_index == 0
+
+
+def test_pose_words_session_empty_buffer_returns_controlled_no_result(
+    tmp_path: Path,
+) -> None:
+    session = create_session(tmp_path)
+
+    event = session.decode_next()
+
+    assert event.status is PoseWordsRuntimeEventStatus.NO_RESULT
+    assert event.reason_code == "empty_buffer"
+    assert event.buffer.empty is True
+
+
+def test_pose_words_session_insufficient_buffer_is_controlled(
+    tmp_path: Path,
+) -> None:
+    session = create_session(tmp_path)
+
+    event = session.push_feature(np.ones(159, dtype=np.float32))
+
+    assert event.status is PoseWordsRuntimeEventStatus.NO_RESULT
+    assert event.reason_code == "insufficient_buffer"
+    assert event.feature_index == 0
+    assert event.buffer.length == 1
+    assert session.snapshot().status is PoseWordsSessionStatus.ACTIVE
+
+
+def test_pose_words_session_feature_indices_and_bounded_buffer_are_predictable(
+    tmp_path: Path,
+) -> None:
+    session = create_session(tmp_path, max_buffer=2)
+
+    events = [
+        session.push_feature(np.full(159, value, dtype=np.float32))
+        for value in (1.0, 2.0, 3.0)
+    ]
+
+    assert [event.feature_index for event in events] == [0, 1, 2]
+    snapshot = session.snapshot()
+    assert snapshot.buffer.length == 2
+    assert snapshot.buffer.max_size == 2
+    assert snapshot.buffer.start_index == 1
+    assert snapshot.buffer.end_index == 2
+    assert snapshot.buffer.next_index == 3
+
+
+def test_pose_words_sessions_do_not_share_buffer_or_state(tmp_path: Path) -> None:
+    write_active_pack(
+        tmp_path,
+        segmentation_runtime_config=(
+            '{"window_size": 2, "step": 1, "min_segment_len": 1}'
+        ),
+    )
+    service = LivePoseWordsRuntimeService.from_settings(
+        build_settings(tmp_path),
+        pipeline_factory=fake_pipeline_factory,
+    )
+    first = service.create_session(max_buffer=4).session
+    second = service.create_session(max_buffer=4).session
+    assert first is not None
+    assert second is not None
+
+    event = first.push_feature(np.ones(159, dtype=np.float32))
+
+    assert event.feature_index == 0
+    assert first.snapshot().buffer.length == 1
+    assert second.snapshot().buffer.length == 0
+    assert first.session_id != second.session_id
+
+
+def test_pose_words_session_reset_and_close_lifecycle(tmp_path: Path) -> None:
+    session = create_session(tmp_path)
+    session.push_feature(np.ones(159, dtype=np.float32))
+
+    reset = session.reset()
+
+    assert reset.reason_code == "session_reset"
+    assert session.snapshot().status is PoseWordsSessionStatus.INITIALIZED
+    assert session.snapshot().buffer.empty is True
+    event_after_reset = session.push_feature(np.ones(159, dtype=np.float32))
+    assert event_after_reset.feature_index == 0
+
+    close = session.close()
+    event_after_close = session.push_feature(np.ones(159, dtype=np.float32))
+
+    assert close.reason_code == "session_closed"
+    assert close.session_status is PoseWordsSessionStatus.CLOSED
+    assert event_after_close.status is PoseWordsRuntimeEventStatus.ERROR
+    assert event_after_close.reason_code == "session_closed"
+    assert event_after_close.buffer.empty is True
+
+
+def test_pose_words_session_controls_invalid_feature_dimensions(
+    tmp_path: Path,
+) -> None:
+    session = create_session(tmp_path)
+
+    event = session.push_feature(np.ones(10, dtype=np.float32))
+
+    assert event.status is PoseWordsRuntimeEventStatus.ERROR
+    assert event.reason_code == "feature_dimension_mismatch"
+    assert event.buffer.empty is True
+
+
+def test_pose_words_session_pose_not_detected_is_no_result(tmp_path: Path) -> None:
+    session = create_session(tmp_path)
+    rgb = np.zeros((8, 8, 3), dtype=np.uint8)
+
+    event = session.push_frame(rgb)
+
+    assert event.status is PoseWordsRuntimeEventStatus.NO_RESULT
+    assert event.reason_code == "pose_not_detected"
+    assert event.hand_present is False
+    assert event.buffer.empty is True
+
+
+def test_pose_words_session_no_active_segment_is_domain_no_result(
+    tmp_path: Path,
+) -> None:
+    session = create_session(tmp_path)
+
+    session.push_feature(np.ones(159, dtype=np.float32))
+    event = session.push_feature(np.ones(159, dtype=np.float32))
+
+    assert event.status is PoseWordsRuntimeEventStatus.NO_RESULT
+    assert event.reason_code == "no_active_segment"
+    assert event.buffer.length == 2
+
+
+def test_pose_words_session_no_completed_segment_is_domain_no_result(
+    tmp_path: Path,
+) -> None:
+    session = create_session(
+        tmp_path,
+        pipeline_factory=fake_pipeline_factory_with_active_segment,
+    )
+
+    session.push_feature(np.ones(159, dtype=np.float32))
+    event = session.push_feature(np.ones(159, dtype=np.float32))
+
+    assert event.status is PoseWordsRuntimeEventStatus.NO_RESULT
+    assert event.reason_code == "no_completed_segment"
+    assert event.buffer.length == 2
+
+
+def test_pose_words_session_no_event_label_is_domain_no_result(
+    tmp_path: Path,
+) -> None:
+    session = create_session(
+        tmp_path,
+        pipeline_factory=fake_pipeline_factory_with_completed_segments,
+    )
+
+    session.push_feature(np.ones(159, dtype=np.float32))
+    event = session.push_feature(np.ones(159, dtype=np.float32))
+
+    assert event.status is PoseWordsRuntimeEventStatus.NO_RESULT
+    assert event.reason_code == "no_event"
+    assert event.details["label"] == "_no_event"
+    assert event.has_result is False
+
+
+def test_pose_words_session_returns_recognition_result_without_transport(
+    tmp_path: Path,
+) -> None:
+    session = create_session(
+        tmp_path,
+        pipeline_factory=fake_pipeline_factory_with_recognition,
+    )
+
+    session.push_feature(np.ones(159, dtype=np.float32))
+    event = session.push_feature(np.ones(159, dtype=np.float32))
+
+    assert event.status is PoseWordsRuntimeEventStatus.RESULT
+    assert event.reason_code is None
+    assert event.recognition is not None
+    assert event.recognition.label == "привет"
+    assert event.recognition.confidence == pytest.approx(0.9)
+
+
+def test_pose_words_session_create_result_is_controlled_when_runtime_unavailable(
+    tmp_path: Path,
+) -> None:
+    service = LivePoseWordsRuntimeService.from_settings(
+        build_settings(tmp_path),
+        pipeline_factory=fake_pipeline_factory,
+    )
+
+    result = service.create_session()
+
+    assert result.created is False
+    assert result.status is LivePoseWordsRuntimeStatus.UNAVAILABLE
+    assert result.reason_codes == ("active_manifest_missing",)
+    assert result.session is None
+
+
+def test_pose_words_decoder_boundary_has_no_websocket_transport_import() -> None:
+    import rsl_sign_recognition.runtime.pose_words as pose_words_runtime
+
+    source = inspect.getsource(pose_words_runtime)
+
+    assert "api.routes" not in source
+    assert "ws_stream" not in source

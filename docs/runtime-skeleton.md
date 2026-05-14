@@ -526,3 +526,34 @@ RT-08 добавляет внутренний service-level boundary для live
 - successful assembly возвращает `status="ready"` только на service-level boundary и не означает, что `WS /ws/stream` уже подключен к live inference.
 
 RT-08 не добавляет новый protocol поверх contract v1, не меняет WebSocket handler и не использует validation/bootstrap directories или draft-only `config.yaml` как fallback. `transport_surface` остается отдельным gate и должен закрываться отдельной transport integration задачей.
+
+### 13.8. RT-09 session state и decoder/runtime boundary
+
+RT-09 добавляет минимальный stateful runtime layer поверх RT-08 service boundary, по-прежнему без изменения transport surface:
+
+- `runtime.pose_words.LivePoseWordsRuntimeService.create_session()` создает независимую live `pose_words` session;
+- session хранит internal `session_id`, состояние `initialized` / `active` / `closed`, snapshot и явные `reset()` / `close()` операции;
+- закрытая session не принимает новые RGB frames или feature vectors и возвращает controlled `error` с `reason_code="session_closed"`;
+- session-owned feature buffer хранит только runtime-facing feature vectors, а не WebSocket payload или contract envelope;
+- buffer имеет bounded size, monotonic feature indices и предсказуемый snapshot: `length`, `max_size`, `next_index`, `start_index`, `end_index`;
+- разные session instances получают разные runtime state containers и не делят feature buffer или streaming segmentation state.
+
+Decoder/runtime boundary живет в `runtime.pose_words`, а не в `api.routes.ws_stream`:
+
+- `push_frame(rgb_frame)` принимает уже decoded RGB frame и вызывает `PoseFeatureService`;
+- `push_feature(feature_vector)` принимает уже подготовленный feature vector;
+- downstream decode path идет через `StreamingBioSegmenter`, segment feature span extraction, `resample_to_fixed_T` и `PoseWordOnnxModel` / classifier wrapper;
+- результат остается domain-level объектом со статусом `result`, `no_result` или `error`, который позднее можно сериализовать в contract-shaped response.
+
+RT-09 явно обрабатывает runtime states без случайных exceptions как публичного поведения boundary:
+
+- empty buffer -> `no_result`, `reason_code="empty_buffer"`;
+- недостаточно frames/features для segmentation window -> `no_result`, `reason_code="insufficient_buffer"`;
+- pose layer не нашел pose -> `no_result`, `reason_code="pose_not_detected"`;
+- pose layer не видит hand -> `no_result`, `reason_code="no_hand_detected"`;
+- segmenter не вернул active/completed segment -> `no_result`, `reason_code="no_active_segment"` или `reason_code="no_completed_segment"`;
+- classifier выбрал no-event class -> `no_result`, `reason_code="no_event"`;
+- invalid feature vector или feature dimension mismatch -> controlled `error`;
+- unavailable/invalid runtime initialization остается controlled service-level result через RT-08 state.
+
+RT-09 не подключает `WS /ws/stream`, не меняет WebSocket contract v1, не добавляет новый protocol и не делает `/ready` green. Transport ownership остается future integration scope: API layer должен лишь передать normalized runtime-facing action в session boundary и сериализовать domain-level outcome в уже существующий contract v1.
