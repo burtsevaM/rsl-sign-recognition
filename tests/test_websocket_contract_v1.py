@@ -9,6 +9,7 @@ import pytest
 from rsl_sign_recognition.contracts.websocket_v1 import (
     control_ack,
     frame_decode_failed_error,
+    recognition_result,
     response_for_client_text,
     runtime_unavailable_error,
 )
@@ -144,6 +145,7 @@ def test_server_helpers_emit_documented_contract_v1_messages_only() -> None:
     messages = [
         control_ack("clear_text"),
         frame_decode_failed_error(),
+        recognition_result(load_fixture("mock-recognition-result-hold.json")["payload"]),
         runtime_unavailable_error(),
     ]
 

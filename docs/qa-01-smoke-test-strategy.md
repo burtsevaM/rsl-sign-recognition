@@ -287,7 +287,7 @@ Automated contract tests проверяют:
 - negative error semantics для `invalid_json`, `unsupported_contract_version`, `unsupported_control_action`, `frame_decode_failed` и `runtime_unavailable`;
 - rejection path для недокументированных message types вроде `partial.result`, `final.result`, `session.start`, `session.stop` и JSON-wrapper для frame input.
 
-Эти tests намеренно не проверяют model quality, segmentation correctness, frame-to-result correlation или live recognition. `recognition.result` покрывается через documented fixtures/mock-compatible surface; текущий live `WS /ws/stream` при binary JPEG frame без подключенного live pipeline должен возвращать `runtime_unavailable`.
+Эти tests намеренно не проверяют model quality, segmentation correctness, frame-to-result correlation или production live recognition. `recognition.result` покрывается через documented fixtures/mock-compatible surface; после RT-06 focused WebSocket tests дополнительно проверяют live-success path через controlled runtime fixture, а unavailable runtime по-прежнему возвращает `runtime_unavailable`.
 
 ### 9.2. Что покрывают automated smoke checks
 
@@ -296,7 +296,7 @@ Automated smoke checks проверяют:
 - `/health` как liveness endpoint: `HTTP 200`, `status = "ok"`, `probe = "liveness"`, `runtime_mode`;
 - `/ready` как readiness endpoint для `live_runtime_path`, включая `HTTP 503`, `gates` и `reason_codes`, когда active manifest отсутствует;
 - состояние, где `active_artifacts=true` после валидного manifest с required files, но `/ready` остается `HTTP 503`, потому что `transport_surface=false`;
-- минимальную `WS /ws/stream` session: `control.clear_text` возвращает `control.ack`, а binary JPEG frame без live pipeline возвращает contract-shaped `runtime_unavailable`;
+- минимальную `WS /ws/stream` session: `control.clear_text` возвращает `control.ack`, binary JPEG frame при unavailable runtime возвращает contract-shaped `runtime_unavailable`, а controlled ready runtime fixture может вернуть `recognition.result`;
 - negative WebSocket paths для malformed JSON control message (`invalid_json`), несовместимого `contract_version` (`unsupported_contract_version`), неизвестного control action (`unsupported_control_action`) и invalid binary frame (`frame_decode_failed`);
 - mock/live boundary: `runtime_mode = "mock"` не делает `/ready` live-ready даже при валидном active manifest.
 - service-level `runtime.pose_words` checks для missing active manifest, missing required artifact, invalid manifest path, invalid runtime config, missing inference backend, model loading failure и mock-mode boundary;
@@ -311,13 +311,13 @@ Manual checks остаются обязательными для сценари�
 - поднять сервис локально, например `python3 -m uvicorn rsl_sign_recognition.asgi:app --app-dir src`, и проверить `GET /health`;
 - проверить `GET /ready` и убедиться, что `HTTP 503` объяснен readiness `gates` / `reason_codes`, а не маскируется под успешную live readiness;
 - открыть минимальную WebSocket session на `WS /ws/stream`, отправить `control.clear_text` и убедиться в `control.ack`;
-- отправить binary JPEG frame и трактовать `runtime_unavailable` как честный session-level signal отсутствующего live pipeline;
+- отправить binary JPEG frame и трактовать `runtime_unavailable` как честный session-level signal отсутствующего/неготового live runtime, либо `recognition.result` как live contract response при готовом runtime;
 - в service-level runtime checks отдельно проверить, что missing/invalid artifacts, invalid config, model loading failure и missing inference backend возвращают controlled state и не создают fake word/confidence;
 - отдельно проверить, что пустой или недостаточный buffer возвращает `no_result` (`empty_buffer` / `insufficient_buffer`), а не `runtime_unavailable`;
 - отдельно подтвердить, что validation/bootstrap artifacts не подменяют `artifacts/runtime/active/pose_words/manifest.json`;
 - после будущего подключения live runtime проверить, что session использует active runtime path, а не hidden fallback или mock source.
 
-Full e2e/live recognition не входит в `QA-02` / `RT-10`, потому что для него нужны отдельные future tasks: wiring `PW-05` / `PW-04` / `PW-03` в live WebSocket pipeline, реальные active ONNX artifacts, startup/runtime hooks и manual integration validation с web team. Successful mock smoke по-прежнему не доказывает live recognition.
+Full e2e/live recognition не входит в `QA-02` / `RT-10`, потому что для него нужны отдельные future tasks: реальные active ONNX artifacts, readiness promotion, startup/runtime hooks и manual integration validation с web team. RT-06 закрывает WebSocket wiring поверх existing runtime boundary; successful controlled fixture smoke по-прежнему не доказывает production live recognition.
 
 ## 10. Non-goals и ограничения
 

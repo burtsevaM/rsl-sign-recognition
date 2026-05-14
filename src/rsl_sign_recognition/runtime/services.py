@@ -7,6 +7,7 @@ from typing import Protocol, Sequence
 
 from rsl_sign_recognition.runtime.artifacts import ActiveArtifactGate
 from rsl_sign_recognition.runtime.config import RuntimeMode, RuntimeShellSettings
+from rsl_sign_recognition.runtime.pose_words import LivePoseWordsRuntimeService
 from rsl_sign_recognition.runtime.readiness import GateStatus, ReadinessSnapshot
 from rsl_sign_recognition.runtime.transport import LiveTransportSurface
 
@@ -23,6 +24,7 @@ class RuntimeServiceRegistry:
     settings: RuntimeShellSettings
     artifact_gate: ActiveArtifactGate
     transport_surface: LiveTransportSurface
+    pose_words_runtime: LivePoseWordsRuntimeService
     runtime_hooks: Sequence[RuntimeReadinessHook] = field(default_factory=tuple)
 
     @classmethod
@@ -32,6 +34,7 @@ class RuntimeServiceRegistry:
         *,
         artifact_gate: ActiveArtifactGate | None = None,
         transport_surface: LiveTransportSurface | None = None,
+        pose_words_runtime: LivePoseWordsRuntimeService | None = None,
         runtime_hooks: Sequence[RuntimeReadinessHook] | None = None,
     ) -> "RuntimeServiceRegistry":
         return cls(
@@ -39,6 +42,8 @@ class RuntimeServiceRegistry:
             artifact_gate=artifact_gate or ActiveArtifactGate(settings.active_manifest_path),
             transport_surface=transport_surface
             or LiveTransportSurface(ws_stream_path=settings.ws_stream_path),
+            pose_words_runtime=pose_words_runtime
+            or LivePoseWordsRuntimeService.from_settings(settings),
             runtime_hooks=tuple(runtime_hooks or ()),
         )
 

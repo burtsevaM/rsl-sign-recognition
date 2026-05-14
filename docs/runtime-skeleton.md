@@ -597,7 +597,7 @@ Mock/live boundary остается прежней:
 - successful mock smoke не делает live runtime ready;
 - live path не должен возвращать mock `recognition.result`, если active artifacts, config, model loading или inference backend недоступны.
 
-Эта semantics согласована с будущими задачами:
+Эта semantics согласована с transport/readiness задачами:
 
 - RT-06 должен сериализовать domain/service states в существующий `contract v1`, а не добавлять новые message types;
 - RT-07 должен использовать readiness gates для pre-session truth и не выставлять `/ready = 200` при known unavailable live path;
@@ -642,3 +642,20 @@ RT-05 считается собранной только на service-level boun
 - training/export;
 - улучшение модели, threshold tuning и production hardening;
 - изменение readiness `transport_surface` gate или объявление `/ready = 200` только на основании service-level runtime assembly.
+
+### 13.11. RT-06 WebSocket transport integration
+
+RT-06 подключает существующий `WS /ws/stream` к RT-05 session boundary без переноса orchestration logic в API route:
+
+- WebSocket route принимает только transport packets и отправляет contract-shaped responses;
+- binary JPEG декодируется в RGB `numpy.uint8` frame как runtime-facing input;
+- `LivePoseWordsRuntimeService.create_session()` создает per-connection `PoseWordsLiveSession`;
+- decoded frame передается в `PoseWordsLiveSession.push_frame(...)`;
+- domain-level `result` сериализуется в `recognition.result` по `contract v1`;
+- domain-level `no_result` сериализуется в `recognition.result` со stable `status = "NONE"`, чтобы unavailable и insufficient/no-result states не смешивались;
+- service/session unavailable или runtime error сериализуется в существующий `error` message с `code = "runtime_unavailable"`;
+- `control.clear_text` сохраняет `control.ack` и сбрасывает runtime session state через `reset()`.
+
+RT-06 не добавляет `partial.result`, `final.result`, `session.start`, `session.stop` или JSON wrapper для frame input. `contract v1` не меняется: меняется только backend wiring за существующим transport endpoint.
+
+Readiness promotion остается отдельной задачей. Даже после RT-06 `/ready` может оставаться `HTTP 503`, пока `transport_surface` gate не будет переведен в честное ready/not-ready состояние отдельным readiness increment.
