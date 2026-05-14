@@ -1,0 +1,183 @@
+{
+  "schema_version": 1,
+  "validation_id": "PW-06-offline-pose-words-validation",
+  "validation_kind": "synthetic_technical_offline_validation",
+  "artifact_pack": {
+    "manifest_path": "artifacts/runtime/active/pose_words/manifest.json",
+    "profile_id": "runtime_active",
+    "profile_role": "active",
+    "readiness_class": "live_candidate",
+    "source_pipeline": "pose_words",
+    "dataset_kind": "synthetic_fixture",
+    "classifier_model_sha256": "2fb75a51ef239bc3bd9e67ad3464505e5bab6ded418d881502f192df9efbfb08",
+    "segmentation_model_sha256": "dbca57fb559a70c64b520e1dbfca283305a0c0ea1ca3d1a844a5129d6f1582f2",
+    "classifier_config_path": "artifacts/runtime/active/pose_words/classifier/runtime_config.json",
+    "segmentation_thresholds_path": "artifacts/runtime/active/pose_words/segmentation/thresholds.json"
+  },
+  "labels": [
+    "_no_event",
+    "привет",
+    "пока"
+  ],
+  "target_labels": [
+    "привет",
+    "пока"
+  ],
+  "checked_gestures": [
+    "привет",
+    "пока"
+  ],
+  "samples": [
+    {
+      "sample_id": "_no_event_synthetic_00",
+      "source": "synthetic_fixture_from_draft_validation_context",
+      "expected_label": "_no_event",
+      "predicted_label": "_no_event",
+      "top1_correct": true,
+      "confidence": 0.624067,
+      "notes": "pre-segmented synthetic pose_words feature clip; not camera/video input; segmentation sign_segments=0, phrase_segments=0"
+    },
+    {
+      "sample_id": "_no_event_synthetic_01",
+      "source": "synthetic_fixture_from_draft_validation_context",
+      "expected_label": "_no_event",
+      "predicted_label": "_no_event",
+      "top1_correct": true,
+      "confidence": 0.623721,
+      "notes": "pre-segmented synthetic pose_words feature clip; not camera/video input; segmentation sign_segments=0, phrase_segments=0"
+    },
+    {
+      "sample_id": "_no_event_synthetic_02",
+      "source": "synthetic_fixture_from_draft_validation_context",
+      "expected_label": "_no_event",
+      "predicted_label": "_no_event",
+      "top1_correct": true,
+      "confidence": 0.624421,
+      "notes": "pre-segmented synthetic pose_words feature clip; not camera/video input; segmentation sign_segments=0, phrase_segments=0"
+    },
+    {
+      "sample_id": "привет_synthetic_00",
+      "source": "synthetic_fixture_from_draft_validation_context",
+      "expected_label": "привет",
+      "predicted_label": "привет",
+      "top1_correct": true,
+      "confidence": 0.843885,
+      "notes": "pre-segmented synthetic pose_words feature clip; not camera/video input; segmentation sign_segments=3, phrase_segments=4"
+    },
+    {
+      "sample_id": "привет_synthetic_01",
+      "source": "synthetic_fixture_from_draft_validation_context",
+      "expected_label": "привет",
+      "predicted_label": "привет",
+      "top1_correct": true,
+      "confidence": 0.843952,
+      "notes": "pre-segmented synthetic pose_words feature clip; not camera/video input; segmentation sign_segments=3, phrase_segments=4"
+    },
+    {
+      "sample_id": "привет_synthetic_02",
+      "source": "synthetic_fixture_from_draft_validation_context",
+      "expected_label": "привет",
+      "predicted_label": "привет",
+      "top1_correct": true,
+      "confidence": 0.844213,
+      "notes": "pre-segmented synthetic pose_words feature clip; not camera/video input; segmentation sign_segments=3, phrase_segments=4"
+    },
+    {
+      "sample_id": "пока_synthetic_00",
+      "source": "synthetic_fixture_from_draft_validation_context",
+      "expected_label": "пока",
+      "predicted_label": "пока",
+      "top1_correct": true,
+      "confidence": 0.750875,
+      "notes": "pre-segmented synthetic pose_words feature clip; not camera/video input; segmentation sign_segments=5, phrase_segments=2"
+    },
+    {
+      "sample_id": "пока_synthetic_01",
+      "source": "synthetic_fixture_from_draft_validation_context",
+      "expected_label": "пока",
+      "predicted_label": "пока",
+      "top1_correct": true,
+      "confidence": 0.750046,
+      "notes": "pre-segmented synthetic pose_words feature clip; not camera/video input; segmentation sign_segments=5, phrase_segments=2"
+    },
+    {
+      "sample_id": "пока_synthetic_02",
+      "source": "synthetic_fixture_from_draft_validation_context",
+      "expected_label": "пока",
+      "predicted_label": "пока",
+      "top1_correct": true,
+      "confidence": 0.749247,
+      "notes": "pre-segmented synthetic pose_words feature clip; not camera/video input; segmentation sign_segments=5, phrase_segments=2"
+    }
+  ],
+  "summary": {
+    "sample_count": 9,
+    "correct": 9,
+    "top1_accuracy": 1.0,
+    "avg_confidence": 0.739381,
+    "confusion_cases": [],
+    "classes": [
+      {
+        "label": "_no_event",
+        "support": 3,
+        "correct": 3,
+        "top1_accuracy": 1.0,
+        "avg_confidence": 0.62407,
+        "main_confusion": ""
+      },
+      {
+        "label": "пока",
+        "support": 3,
+        "correct": 3,
+        "top1_accuracy": 1.0,
+        "avg_confidence": 0.750056,
+        "main_confusion": ""
+      },
+      {
+        "label": "привет",
+        "support": 3,
+        "correct": 3,
+        "top1_accuracy": 1.0,
+        "avg_confidence": 0.844017,
+        "main_confusion": ""
+      }
+    ]
+  },
+  "target_summary": {
+    "sample_count": 6,
+    "correct": 6,
+    "top1_accuracy": 1.0,
+    "avg_confidence": 0.797036,
+    "confusion_cases": [],
+    "classes": [
+      {
+        "label": "пока",
+        "support": 3,
+        "correct": 3,
+        "top1_accuracy": 1.0,
+        "avg_confidence": 0.750056,
+        "main_confusion": ""
+      },
+      {
+        "label": "привет",
+        "support": 3,
+        "correct": 3,
+        "top1_accuracy": 1.0,
+        "avg_confidence": 0.844017,
+        "main_confusion": ""
+      }
+    ]
+  },
+  "confidence_threshold": {
+    "candidate_threshold": 0.74,
+    "min_correct_target_confidence": 0.749247,
+    "production_threshold_ready": false,
+    "reason": "candidate threshold рассчитан только для synthetic technical set; для production/live threshold нужны реальные negatives и hard cases"
+  },
+  "limitations": [
+    "Validation uses deterministic synthetic feature clips, not real camera/video samples.",
+    "Classifier is tested offline on pre-segmented pose_words feature clips.",
+    "Segmentation artifact is loaded and checked on synthetic clips, but live stream orchestration is not connected.",
+    "This run does not evaluate WebSocket integration, frontend integration, training, export, or words baseline decisions."
+  ]
+}
