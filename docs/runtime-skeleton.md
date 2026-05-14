@@ -602,3 +602,43 @@ Mock/live boundary остается прежней:
 - RT-06 должен сериализовать domain/service states в существующий `contract v1`, а не добавлять новые message types;
 - RT-07 должен использовать readiness gates для pre-session truth и не выставлять `/ready = 200` при known unavailable live path;
 - QA-03 должен отличать mock success, controlled unavailable, no-result/insufficient input и настоящий live `recognition.result`.
+
+### 13.10. RT-05 umbrella boundary для live `pose_words` orchestration
+
+RT-05 закрывает service-level runtime orchestration boundary, который собирается из уже выделенных clean layers:
+
+- `ART-03` active artifact pack и `ART-02` loader дают единственный clean load path через `RuntimeShellSettings.active_manifest_path`;
+- `PW-05` остается pose feature layer для decoded RGB frame -> runtime-facing feature vector;
+- `PW-04` остается streaming BIO segmentation layer для feature buffer -> active/completed segment boundary;
+- `PW-03` остается classifier wrapper для prepared feature clip -> class probabilities / label;
+- `RT-08` собирает эти layers в `LivePoseWordsRuntimeService`;
+- `RT-09` добавляет независимые sessions, bounded feature buffer и decoder boundary;
+- `RT-10` фиксирует controlled unavailable/invalid/no-result/error semantics.
+
+Итоговая RT-05 граница выглядит так:
+
+```text
+RuntimeShellSettings.active_manifest_path
+  -> ActiveArtifactLoader
+  -> build_pose_words_runtime_pipeline(ART-03 + PW-05 + PW-04 + PW-03)
+  -> LivePoseWordsRuntimeService.create_session()
+  -> PoseWordsLiveSession.push_frame(...) / push_feature(...)
+  -> domain-level result | no_result | error
+```
+
+Эта orchestration boundary является внутренним backend service API. Она вызывается из tests без WebSocket, не импортирует `api.routes.ws_stream`, не читает draft `backend/config.yaml`, не сканирует `artifacts/validation/...` или `artifacts/bootstrap/...` как fallback и не создает mock `recognition.result` при unavailable live path.
+
+RT-05 считается собранной только на service-level boundary:
+
+- prepared runtime input может вернуть domain-level `result`, controlled `no_result` (`empty_buffer`, `insufficient_buffer`, `pose_not_detected`, `no_hand_detected`, `no_active_segment`, `no_completed_segment`, `no_event`) или controlled `error`;
+- unavailable/invalid runtime states остаются service-level states и не смешиваются с empty/insufficient buffer;
+- session state и feature buffer принадлежат конкретной session и не делятся между sessions;
+- `contract v1` не меняется, потому что serialization в WebSocket messages относится к отдельной transport integration задаче.
+
+Вне RT-05 остаются:
+
+- wiring `WS /ws/stream` к live session/runtime;
+- frontend integration;
+- training/export;
+- улучшение модели, threshold tuning и production hardening;
+- изменение readiness `transport_surface` gate или объявление `/ready = 200` только на основании service-level runtime assembly.
