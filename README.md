@@ -2,7 +2,7 @@
 
 `rsl-sign-recognition` — clean repository для ML-модуля распознавания РЖЯ в сценарии sign-to-text. Его задача — стать местом для воспроизводимого runtime-контура, интеграционного контракта, runtime-facing документации и поэтапной миграции из draft-репозитория в более чистую долгоживущую структуру.
 
-На текущем этапе репозиторий уже содержит **минимальный FastAPI runtime shell** для `/health`, `/ready` и transport-level `WS /ws/stream`, не подключенный к transport слой `PW-05` для pose extraction / normalization / feature composition, изолированный `PW-04` segmentation runtime layer для BIO boundaries поверх feature vectors, изолированный `PW-03` classifier wrapper для `pose_words` feature clips и `ART-02` active artifact manifest reader / loader для clean runtime path. Репозиторий по-прежнему не содержит полного end-to-end inference/runtime-контура, реальных активных артефактов, live inference pipeline, моделей, training/export-кода и operational scripts.
+На текущем этапе репозиторий уже содержит **минимальный FastAPI runtime shell** для `/health`, `/ready` и transport-level `WS /ws/stream`, не подключенный к transport слой `PW-05` для pose extraction / normalization / feature composition, изолированный `PW-04` segmentation runtime layer для BIO boundaries поверх feature vectors, изолированный `PW-03` classifier wrapper для `pose_words` feature clips, `ART-02` active artifact manifest reader / loader для clean runtime path и минимальный `ART-03` active artifact pack для `pose_words`. Репозиторий по-прежнему не содержит полного end-to-end inference/runtime-контура, live inference pipeline, production-quality model proof, training/export-кода и operational scripts.
 
 ## Что это за репозиторий
 
@@ -36,6 +36,7 @@
 - `PW-04` слой `segmentation` для BIO decoder, streaming segmentation state, feature-span extraction и segmentation-specific ONNX wrapper без подключения к `/ws/stream`;
 - `PW-03` слой `inference.pose_words` для ONNX classifier inference поверх уже подготовленного feature clip `[T, F]` без подключения к `/ws/stream`;
 - `ART-02` слой `runtime.artifacts` для чтения active manifest, проверки обязательных classifier/segmentation files и безопасного разрешения artifact paths без запуска ONNX sessions;
+- `ART-03` минимальный active artifact pack `artifacts/runtime/active/pose_words/` для закрытия `active_artifacts` gate на уровне manifest + required files;
 - foundation CI skeleton для `push` и `pull_request`;
 - PR template и issue templates;
 - каноническая система milestones, epics, labels и task-кодов.
@@ -72,6 +73,7 @@
 - [docs/runtime-skeleton.md](docs/runtime-skeleton.md) — target module structure
   и границы runtime skeleton для clean repo
 - [docs/artifact-policy.md](docs/artifact-policy.md) — target policy для active runtime artifact manifest, profiles и clean load path
+- [docs/artifacts/pose_words-active-pack.md](docs/artifacts/pose_words-active-pack.md) — ART-03 active artifact pack layout, source mapping, labels/class ids и readiness checks
 - [docs/mig-02-runtime-required-migration-governance.md](docs/mig-02-runtime-required-migration-governance.md) — governance guardrails и source-to-target mapping для future runtime-required migration issues
 - [docs/qa-01-smoke-test-strategy.md](docs/qa-01-smoke-test-strategy.md) — минимальная smoke test strategy для contract, mock, backend smoke и manual checks
 - [docs/int-01-web-team-handoff-notes.md](docs/int-01-web-team-handoff-notes.md) — минимальные handoff notes для web team вокруг clean runtime surface
@@ -98,7 +100,7 @@
 - `MIG-02` — controlled migration governance для `PW-05`, `PW-03`, `PW-04` и `ART-02`;
 - `QA-01` и `INT-01` — smoke/integration strategy и handoff notes.
 
-Текущий clean contour ограничен минимальным probe-level shell, изолированным `PW-05` pose feature layer, изолированным `PW-04` segmentation layer, изолированным `PW-03` pose_words classifier wrapper и `ART-02` active artifact loader/readiness gate. Validation workflows, bootstrap/fallback path, локальные active artifact profiles, реальные model artifacts и machine-local operational runbooks остаются в `gesture-recognition-draft` до отдельных migration tasks.
+Текущий clean contour ограничен минимальным probe-level shell, изолированным `PW-05` pose feature layer, изолированным `PW-04` segmentation layer, изолированным `PW-03` pose_words classifier wrapper, `ART-02` active artifact loader/readiness gate и `ART-03` минимальным technical active pack. Validation workflows, bootstrap/fallback path, training/export, dataset generation, broader artifact lifecycle и machine-local operational runbooks остаются в `gesture-recognition-draft` до отдельных migration tasks.
 
 ## PW-05 Pose Feature Runtime Layer
 
@@ -167,7 +169,7 @@ Loader валидирует JSON shape, profile markers, descriptors и безо
 - не объявляет `/ready = 200`, пока не закрыты `runtime_shell`, `active_artifacts` и `transport_surface`;
 - не имитирует `recognition.result`, если live runtime pipeline отсутствует.
 
-`/ready` уже использует active artifact gate: missing manifest, invalid manifest, non-active profile или missing required files переводят `active_artifacts` в `false`. Валидный manifest с placeholder required files может закрыть только этот gate; `LiveTransportSurface.evaluate()` по-прежнему возвращает `live_runtime_pipeline_unavailable`.
+`/ready` уже использует active artifact gate: missing manifest, invalid manifest, non-active profile или missing required files переводят `active_artifacts` в `false`. ART-03 добавляет минимальный technical active pack, поэтому `active_artifacts` может стать `true` при наличии committed required files; `LiveTransportSurface.evaluate()` по-прежнему возвращает `live_runtime_pipeline_unavailable`, и общий `/ready` остается `HTTP 503`, пока live transport/runtime pipeline не собран.
 
 Пример локального запуска:
 

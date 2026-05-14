@@ -1,0 +1,59 @@
+{
+  "generated_by": "backend/train/train_pose_bio_segmenter.py",
+  "artifact_kind": "validation",
+  "dataset_kind": "synthetic_fixture",
+  "trained": true,
+  "source_pipeline": "run_pose_words_validation",
+  "bio_mapping": {
+    "B": 0,
+    "I": 1,
+    "O": 2
+  },
+  "best_epoch": 12,
+  "sign": {
+    "th_b": 0.5,
+    "th_o": 0.5
+  },
+  "phrase": {
+    "th_b": 0.5,
+    "th_o": 0.5
+  },
+  "val_sign": {
+    "th_b": 0.5,
+    "th_o": 0.5,
+    "boundary_tp": 6,
+    "boundary_fp": 9,
+    "boundary_fn": 0,
+    "boundary_precision": 0.4,
+    "boundary_recall": 1.0,
+    "boundary_f1": 0.5714285714285715,
+    "segment_tp": 6,
+    "segment_fp": 9,
+    "segment_fn": 0,
+    "segment_precision": 0.4,
+    "segment_recall": 1.0,
+    "segment_f1": 0.5714285714285715,
+    "segment_mean_iou": 0.944207027540361
+  },
+  "val_phrase": {
+    "th_b": 0.5,
+    "th_o": 0.5,
+    "boundary_tp": 6,
+    "boundary_fp": 1,
+    "boundary_fn": 0,
+    "boundary_precision": 0.8571428571428571,
+    "boundary_recall": 1.0,
+    "boundary_f1": 0.923076923076923,
+    "segment_tp": 6,
+    "segment_fp": 1,
+    "segment_fn": 0,
+    "segment_precision": 0.8571428571428571,
+    "segment_recall": 1.0,
+    "segment_f1": 0.923076923076923,
+    "segment_mean_iou": 0.9583029252569482
+  },
+  "boundary_tolerance": 0,
+  "segment_iou_threshold": 0.5,
+  "min_segment_len": 1,
+  "created_at_unix": 1773919387.803157
+}

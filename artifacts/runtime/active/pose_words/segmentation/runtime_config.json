@@ -1,0 +1,25 @@
+{
+  "generated_by": "backend/train/export_bio_segmenter_onnx.py",
+  "artifact_kind": "validation",
+  "dataset_kind": "synthetic_fixture",
+  "trained": true,
+  "source_pipeline": "run_pose_words_validation",
+  "input_dim": 159,
+  "window_size": 64,
+  "dynamic_time": true,
+  "model_config": {
+    "hidden_size": 16,
+    "num_layers": 1,
+    "dropout": 0.05,
+    "bidirectional": true
+  },
+  "bio_mapping": {
+    "B": 0,
+    "I": 1,
+    "O": 2
+  },
+  "norm_flags": {
+    "use_shoulder_norm": false,
+    "use_hands_3d_norm": false
+  }
+}

@@ -302,3 +302,20 @@ def test_valid_manifest_returns_resolved_paths(tmp_path: Path) -> None:
     assert resolved.classifier_config_path == classifier_config.resolve()
     assert resolved.segmentation_config_path == segmentation_config.resolve()
     assert ActiveArtifactGate(path).evaluate().passed is True
+
+
+def test_packaged_pose_words_active_pack_loads() -> None:
+    repo_root = Path(__file__).resolve().parents[1]
+    path = repo_root / "artifacts/runtime/active/pose_words/manifest.json"
+
+    resolved = ActiveArtifactLoader(path).load()
+
+    assert resolved.profile_id == "runtime_active"
+    assert resolved.classifier_labels_path.read_text(encoding="utf-8").splitlines() == [
+        "_no_event",
+        "привет",
+        "пока",
+    ]
+    assert resolved.classifier_config_path is not None
+    assert resolved.segmentation_config_path is not None
+    assert ActiveArtifactGate(path).evaluate().passed is True
