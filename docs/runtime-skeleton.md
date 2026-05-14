@@ -514,3 +514,15 @@ Gate не закрыт, если:
 - `mock` помогает web team и smoke automation до появления live runtime surface;
 - `live readiness` начинается только там, где закрыты `runtime_shell`, `active_artifacts` и `transport_surface`;
 - ни одна из этих формулировок не означает, что полный working runtime уже перенесён в clean repo.
+
+### 13.7. RT-08 service-level `pose_words` orchestration
+
+RT-08 добавляет внутренний service-level boundary для live `pose_words` path без изменения transport surface:
+
+- `runtime.pose_words.LivePoseWordsRuntimeService` инициализируется через `RuntimeShellSettings` и использует `active_manifest_path`;
+- `pipelines.pose_words.runtime` собирает конкретный `pose_words` path из `PW-05` pose feature service, `PW-04` streaming BIO segmentation layer, `PW-03` classifier wrapper и `ART-02` active artifact loader;
+- отсутствующий active manifest или missing required artifact возвращает controlled `status="unavailable"`;
+- некорректный manifest или misconfigured runtime components возвращают controlled `status="invalid"`;
+- successful assembly возвращает `status="ready"` только на service-level boundary и не означает, что `WS /ws/stream` уже подключен к live inference.
+
+RT-08 не добавляет новый protocol поверх contract v1, не меняет WebSocket handler и не использует validation/bootstrap directories или draft-only `config.yaml` как fallback. `transport_surface` остается отдельным gate и должен закрываться отдельной transport integration задачей.
