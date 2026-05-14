@@ -310,6 +310,63 @@ def test_live_pose_words_runtime_initializes_from_active_manifest(
     assert state.pipeline.segmenter.window == 64
 
 
+def test_rt05_service_level_runtime_path_is_orchestrated_without_transport(
+    tmp_path: Path,
+) -> None:
+    write_active_pack(
+        tmp_path,
+        segmentation_runtime_config=(
+            '{"window_size": 2, "step": 1, "min_segment_len": 1}'
+        ),
+    )
+    service = LivePoseWordsRuntimeService.from_settings(
+        build_settings(tmp_path),
+        pipeline_factory=fake_pipeline_factory_with_recognition,
+    )
+
+    result = service.create_session(session_id="rt05-session", max_buffer=4)
+
+    assert result.created is True
+    assert result.status is LivePoseWordsRuntimeStatus.READY
+    assert result.reason_codes == ()
+    assert result.session is not None
+    assert result.runtime_state is not None
+    assert result.runtime_state.available is True
+    assert result.runtime_state.components == (
+        "active_artifact_loader",
+        "pose_feature_service",
+        "bio_segmentation",
+        "pose_words_classifier",
+        "pose_words_session_state",
+    )
+    assert result.runtime_state.artifacts is not None
+    active_root = active_manifest_path(tmp_path).parent.resolve()
+    assert result.runtime_state.artifacts.manifest_path == active_manifest_path(tmp_path)
+    assert result.runtime_state.artifacts.classifier_model_path == (
+        active_root / "classifier/model.onnx"
+    )
+    assert result.runtime_state.artifacts.segmentation_model_path == (
+        active_root / "segmentation/model.onnx"
+    )
+    assert not {
+        "validation",
+        "bootstrap",
+        "gesture-recognition-draft",
+    }.intersection(result.runtime_state.artifacts.manifest_path.parts)
+
+    first_event = result.session.push_feature(np.ones(159, dtype=np.float32))
+    second_event = result.session.push_feature(np.ones(159, dtype=np.float32))
+
+    assert first_event.status is PoseWordsRuntimeEventStatus.NO_RESULT
+    assert first_event.reason_code == "insufficient_buffer"
+    assert second_event.status is PoseWordsRuntimeEventStatus.RESULT
+    assert second_event.reason_code is None
+    assert second_event.recognition is not None
+    assert second_event.recognition.label == "привет"
+    assert second_event.recognition.confidence == pytest.approx(0.9)
+    assert "contract_version" not in second_event.as_payload()
+
+
 def test_live_pose_words_runtime_reports_unavailable_for_missing_manifest(
     tmp_path: Path,
 ) -> None:

@@ -2,7 +2,7 @@
 
 `rsl-sign-recognition` — clean repository для ML-модуля распознавания РЖЯ в сценарии sign-to-text. Его задача — стать местом для воспроизводимого runtime-контура, интеграционного контракта, runtime-facing документации и поэтапной миграции из draft-репозитория в более чистую долгоживущую структуру.
 
-На текущем этапе репозиторий уже содержит **минимальный FastAPI runtime shell** для `/health`, `/ready` и transport-level `WS /ws/stream`, не подключенный к transport слой `PW-05` для pose extraction / normalization / feature composition, изолированный `PW-04` segmentation runtime layer для BIO boundaries поверх feature vectors, изолированный `PW-03` classifier wrapper для `pose_words` feature clips, `ART-02` active artifact manifest reader / loader для clean runtime path, минимальный `ART-03` active artifact pack для `pose_words`, service-level `RT-08` orchestrator и `RT-09` session/runtime boundary для live `pose_words` session state, bounded feature buffer и domain-level decode results без WebSocket wiring. Репозиторий по-прежнему не содержит полного end-to-end inference/runtime-контура, подключенного live inference pipeline, production-quality model proof, training/export-кода и operational scripts.
+На текущем этапе репозиторий уже содержит **минимальный FastAPI runtime shell** для `/health`, `/ready` и transport-level `WS /ws/stream`, не подключенный к transport слой `PW-05` для pose extraction / normalization / feature composition, изолированный `PW-04` segmentation runtime layer для BIO boundaries поверх feature vectors, изолированный `PW-03` classifier wrapper для `pose_words` feature clips, `ART-02` active artifact manifest reader / loader для clean runtime path, минимальный `ART-03` active artifact pack для `pose_words`, service-level `RT-05` live `pose_words` orchestration boundary, который объединяет `RT-08` orchestrator, `RT-09` session/runtime boundary и `RT-10` controlled failure semantics без WebSocket wiring. Репозиторий по-прежнему не содержит полного end-to-end inference/runtime-контура, подключенного live inference pipeline, production-quality model proof, training/export-кода и operational scripts.
 
 ## Что это за репозиторий
 
@@ -37,6 +37,7 @@
 - `PW-03` слой `inference.pose_words` для ONNX classifier inference поверх уже подготовленного feature clip `[T, F]` без подключения к `/ws/stream`;
 - `ART-02` слой `runtime.artifacts` для чтения active manifest, проверки обязательных classifier/segmentation files и безопасного разрешения artifact paths без запуска ONNX sessions;
 - `ART-03` минимальный active artifact pack `artifacts/runtime/active/pose_words/` для закрытия `active_artifacts` gate на уровне manifest + required files;
+- `RT-05` service-level live `pose_words` runtime path, который связывает active artifact loader, `PW-05`, `PW-04`, `PW-03`, session state и controlled failure semantics без подключения к `WS /ws/stream`;
 - `RT-08` service-level `runtime.pose_words` orchestrator для сборки live `pose_words` path через active artifact loader, `PW-05`, `PW-04` и `PW-03` без подключения к `WS /ws/stream`;
 - `RT-09` session layer внутри `runtime.pose_words` для создания live session, bounded feature buffer, reset/close lifecycle и controlled decoder boundary без владения transport state;
 - foundation CI skeleton для `push` и `pull_request`;
@@ -103,7 +104,7 @@
 - `MIG-02` — controlled migration governance для `PW-05`, `PW-03`, `PW-04` и `ART-02`;
 - `QA-01` и `INT-01` — smoke/integration strategy и handoff notes.
 
-Текущий clean contour ограничен минимальным probe-level shell, изолированным `PW-05` pose feature layer, изолированным `PW-04` segmentation layer, изолированным `PW-03` pose_words classifier wrapper, `ART-02` active artifact loader/readiness gate, `ART-03` минимальным technical active pack, service-level `RT-08` orchestration boundary и `RT-09` session/runtime boundary без WebSocket transport. Validation workflows, bootstrap/fallback path, training/export, dataset generation, broader artifact lifecycle и machine-local operational runbooks остаются в `gesture-recognition-draft` до отдельных migration tasks.
+Текущий clean contour ограничен минимальным probe-level shell, изолированным `PW-05` pose feature layer, изолированным `PW-04` segmentation layer, изолированным `PW-03` pose_words classifier wrapper, `ART-02` active artifact loader/readiness gate, `ART-03` минимальным technical active pack и service-level `RT-05` live `pose_words` runtime orchestration boundary без WebSocket transport. Validation workflows, bootstrap/fallback path, training/export, dataset generation, broader artifact lifecycle и machine-local operational runbooks остаются в `gesture-recognition-draft` до отдельных migration tasks.
 
 ## PW-05 Pose Feature Runtime Layer
 
@@ -178,6 +179,19 @@ Loader валидирует JSON shape, profile markers, descriptors и безо
 
 Этот layer не подключает `WS /ws/stream`, не меняет WebSocket contract v1 и не объявляет clean repo production-ready runtime. Он дает внутреннюю service-level поверхность, которую следующий transport integration increment сможет сериализовать в contract-shaped responses.
 
+## RT-05 Live Pose Words Runtime Orchestration
+
+RT-05 закрывает umbrella-level service boundary для live `pose_words` path без WebSocket integration:
+
+- service создается из `RuntimeShellSettings` и использует `active_manifest_path` как единственный clean active artifact pointer;
+- runtime path собирает `ART-03` active pack через `ActiveArtifactLoader`, `PW-05` pose feature service, `PW-04` BIO segmentation layer и `PW-03` classifier wrapper;
+- `create_session()` создает независимую session с bounded feature buffer и decoder boundary для prepared RGB frame или feature fixture;
+- prepared feature input на service-level тесте возвращает domain-level `result`, `no_result` или controlled `error` без contract/WebSocket envelope;
+- empty/insufficient buffer, no pose/hand/segment/no-event и unavailable/invalid runtime states остаются разными controlled outcomes;
+- validation/bootstrap directories, draft `config.yaml`, hardcoded draft paths и mock success не подменяют live runtime path.
+
+RT-05 не подключает `WS /ws/stream` к live runtime, не меняет `contract v1`, не добавляет frontend integration, training/export, model-quality improvements или production hardening. Полный live e2e path через WebSocket остается scope отдельной transport integration задачи.
+
 ## Minimal Runtime Shell
 
 В clean repo теперь есть минимальный FastAPI runtime shell:
@@ -197,7 +211,7 @@ Loader валидирует JSON shape, profile markers, descriptors и безо
 - не объявляет `/ready = 200`, пока не закрыты `runtime_shell`, `active_artifacts` и `transport_surface`;
 - не имитирует `recognition.result`, если live runtime pipeline отсутствует.
 
-`/ready` уже использует active artifact gate: missing manifest, invalid manifest, non-active profile или missing required files переводят `active_artifacts` в `false`. ART-03 добавляет минимальный technical active pack, поэтому `active_artifacts` может стать `true` при наличии committed required files; RT-08 добавляет service-level сборку `pose_words` path без transport wiring; RT-09 добавляет внутреннюю session/runtime boundary без подключения transport; `LiveTransportSurface.evaluate()` по-прежнему возвращает `live_runtime_pipeline_unavailable`, и общий `/ready` остается `HTTP 503`, пока live transport/runtime pipeline не подключен к transport surface отдельной задачей.
+`/ready` уже использует active artifact gate: missing manifest, invalid manifest, non-active profile или missing required files переводят `active_artifacts` в `false`. ART-03 добавляет минимальный technical active pack, поэтому `active_artifacts` может стать `true` при наличии committed required files; RT-05 добавляет service-level сборку `pose_words` path, session/runtime boundary и controlled failure semantics без transport wiring; `LiveTransportSurface.evaluate()` по-прежнему возвращает `live_runtime_pipeline_unavailable`, и общий `/ready` остается `HTTP 503`, пока live transport/runtime pipeline не подключен к transport surface отдельной задачей.
 
 Пример локального запуска:
 
