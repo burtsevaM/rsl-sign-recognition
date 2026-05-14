@@ -87,6 +87,28 @@ class StreamingBioSegmenter:
     def next_frame_index(self) -> int:
         return int(self._next_frame_idx)
 
+    def reset(self) -> None:
+        """Clear all streaming state for a new runtime session epoch."""
+
+        self._features.clear()
+        self._frame_indices.clear()
+        self._next_frame_idx = 0
+        self._frames_since_infer = 0
+        self._has_run_inference = False
+        self._sign_sum.clear()
+        self._phrase_sum.clear()
+        self._counts.clear()
+        self._latest_sign_segments = []
+        self._latest_phrase_segments = []
+        self._latest_active_sign = False
+        self._latest_active_phrase = False
+        self._latest_active_sign_progress = 0.0
+        self._latest_active_phrase_progress = 0.0
+        self._last_emitted_sign_end = -1
+        self._last_emitted_phrase_end = -1
+        self._emitted_sign_keys.clear()
+        self._emitted_phrase_keys.clear()
+
     def _append_feature(self, feature: np.ndarray) -> None:
         arr = np.asarray(feature, dtype=np.float32)
         if arr.size == 0:
