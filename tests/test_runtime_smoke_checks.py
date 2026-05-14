@@ -1,9 +1,12 @@
 from __future__ import annotations
 
+from io import BytesIO
 import json
 from pathlib import Path
 
 from fastapi.testclient import TestClient
+import numpy as np
+from PIL import Image
 
 from rsl_sign_recognition.api.factory import create_app
 from rsl_sign_recognition.runtime.config import RuntimeMode, RuntimeShellSettings
@@ -59,6 +62,13 @@ def write_active_artifact_manifest(tmp_path: Path) -> None:
         ),
         encoding="utf-8",
     )
+
+
+def valid_jpeg_bytes() -> bytes:
+    image = Image.fromarray(np.full((2, 2, 3), 127, dtype=np.uint8))
+    buffer = BytesIO()
+    image.save(buffer, format="JPEG")
+    return buffer.getvalue()
 
 
 def error_message(code: str) -> str:
@@ -163,7 +173,7 @@ def test_minimal_ws_stream_smoke_covers_control_and_runtime_unavailable(
                 },
             }
 
-            websocket.send_bytes(b"\xff\xd8\xff\xd9")
+            websocket.send_bytes(valid_jpeg_bytes())
             assert websocket.receive_json() == error_response(
                 "runtime_unavailable",
                 recoverable=False,

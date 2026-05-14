@@ -14,7 +14,7 @@
 
 Цель increment - дать web team честную integration-ready поверхность для подключения UI, contract parsing, liveness/readiness handling и controlled error states. Этот handoff не объявляет clean repo production-ready runtime и не доказывает live распознавание жестов.
 
-В scope INT-02 входит документация текущих ожиданий и проверок. В scope INT-02 не входят production rollout, новый protocol surface, full e2e recognition, реальные ONNX artifacts, live `pose_words` inference wiring или замена отсутствующего live pipeline mock-only успехом.
+В scope INT-02 входит документация текущих ожиданий и проверок. В scope INT-02 не входят production rollout, новый protocol surface, full e2e production validation, реальные production-grade ONNX artifacts или замена отсутствующего live runtime mock-only успехом.
 
 Source of truth:
 
@@ -35,19 +35,19 @@ Source of truth:
 - WebSocket подключение к `WS /ws/stream`;
 - JSON envelope `contract v1` с `type`, `contract_version`, `payload`;
 - server messages `control.ack` и `error`;
-- contract-level обработку `recognition.result` по fixtures и documented stable surface;
+- обработку `recognition.result` по documented stable surface, включая live WebSocket response при готовом runtime;
 - UI-состояния для `not_ready`, recoverable errors и non-recoverable `runtime_unavailable`.
 
 Сейчас нельзя считать готовым:
 
-- live распознавание жестов;
-- full `frame -> pose extraction -> segmentation -> classifier -> recognition.result` path;
+- production-ready live распознавание жестов;
+- quality/stability proof для full `frame -> pose extraction -> segmentation -> classifier -> recognition.result` path;
 - наличие реальных active ONNX artifacts;
 - production readiness или latency/stability guarantees;
 - обязательный `HTTP 200` на `/ready`;
-- наличие live `recognition.result` после отправки JPEG frame.
+- наличие live `recognition.result` в окружении, где runtime не смог создать session или загрузить backend/artifacts.
 
-Текущий `WS /ws/stream` является working transport surface: `control.clear_text` возвращает `control.ack`, invalid JSON/control/frame cases возвращают documented `error`, а валидный JPEG frame без подключенного live pipeline возвращает `runtime_unavailable`.
+Текущий `WS /ws/stream` является working transport surface: `control.clear_text` возвращает `control.ack`, invalid JSON/control/frame cases возвращают documented `error`, valid JPEG frame декодируется в RGB runtime input и передается в live `pose_words` session boundary. Если runtime готов и возвращает domain-level result, backend отправляет `recognition.result`; если runtime недоступен, отсутствует, не загружен или не готов, backend возвращает controlled `runtime_unavailable`.
 
 ## 3. `/health`: liveness expectations
 
@@ -95,7 +95,7 @@ curl -i http://localhost:8000/health
 | --- | --- | --- |
 | `runtime_shell` | Сервис запущен в live mode и runtime shell не находится в заведомо unavailable state. | В `mock` mode gate должен быть `false` для live readiness. |
 | `active_artifacts` | Active manifest и required files для `pose_words` live path доступны по clean policy. | Валидный manifest закрывает только этот gate и не запускает ONNX sessions. |
-| `transport_surface` | `WS /ws/stream` связан с live runtime pipeline, а не только с transport/error boundary. | Сейчас gate честно остается `false`: `live_runtime_pipeline_unavailable`. |
+| `transport_surface` | `WS /ws/stream` связан с live runtime pipeline, а не только с transport/error boundary. | RT-06 подключает WebSocket к session boundary, но readiness promotion остается отдельной задачей RT-07; gate пока может честно оставаться `false`: `live_runtime_pipeline_unavailable`. |
 
 Возможные HTTP статусы сейчас:
 
@@ -179,11 +179,11 @@ Server messages в v1:
 - `control.ack`;
 - `error`.
 
-Текущая backend surface гарантирует contract-shaped responses для control/error paths. Она не гарантирует live `recognition.result` на JPEG frame, потому что live pipeline пока не подключен.
+Текущая backend surface гарантирует contract-shaped responses для control/error paths. Для binary JPEG frame она вызывает live `pose_words` runtime boundary: готовый runtime может вернуть `recognition.result`, а недоступный runtime возвращает controlled `runtime_unavailable`.
 
 ### `recognition.result`
 
-`recognition.result` - stable contract message для sign-to-text stream. В текущем increment web team должна поддержать его parsing по contract/fixtures, но не ожидать, что live backend уже начнет присылать такие сообщения после кадров.
+`recognition.result` - stable contract message для sign-to-text stream. После RT-06 web team может получать его от live backend на том же `WS /ws/stream`, если runtime session создана и decoder boundary вернул result/no-result state. Availability зависит от active artifacts, optional runtime dependencies и качества текущего active pack; protocol surface от этого не меняется.
 
 Stable поля:
 
@@ -243,7 +243,7 @@ Frontend должен корректно обрабатывать:
 
 ### `runtime_unavailable`
 
-Текущий валидный JPEG frame на `WS /ws/stream` без live pipeline возвращает:
+Валидный JPEG frame на `WS /ws/stream` возвращает `runtime_unavailable`, если live runtime session не может быть создана или продолжена:
 
 ```json
 {
@@ -260,7 +260,7 @@ Frontend должен корректно обрабатывать:
 }
 ```
 
-Это честная граница отсутствующего live runtime pipeline. Это не failure web-интеграции и не сигнал, что нужно изобретать mock-only success в live path.
+Это честная граница отсутствующего или неготового live runtime. Это не failure web-интеграции и не сигнал, что нужно изобретать mock-only success в live path.
 
 Web team должна трактовать `runtime_unavailable` как controlled unavailable state:
 
@@ -297,15 +297,15 @@ Successful mock smoke доказывает только parsing, UI state handli
 
 ### Live behavior
 
-Будущий live behavior потребует отдельных runtime/artifact задач:
+Дальнейший live behavior потребует отдельных runtime/artifact/readiness задач:
 
 - реальных active artifacts в `artifacts/runtime/active/pose_words/`;
-- live `pose_words` path;
-- обработки `frame -> pose extraction -> segmentation -> classifier -> recognition.result`;
-- связки `PW-05`, `PW-04`, `PW-03` и `ART-02` через runtime orchestration;
+- readiness promotion для `transport_surface`;
+- manual validation поверх реального camera/video input;
+- подтверждения model quality/stability для `frame -> pose extraction -> segmentation -> classifier -> recognition.result`;
 - полноценной проверки live recognition с web team.
 
-Когда live path появится, `/ready` должен стать `HTTP 200` только при закрытых gates, а `WS /ws/stream` сможет возвращать live `recognition.result`. До этого безопасное UI-ожидание такое: backend может быть online, но live recognition unavailable/not ready.
+`/ready` должен стать `HTTP 200` только при закрытых gates. До readiness promotion безопасное UI-ожидание такое: backend может быть online, `WS /ws/stream` может быть функционален, но live recognition все еще может быть unavailable/not ready в конкретной session.
 
 ## 7. Verification checklist
 
@@ -326,7 +326,8 @@ pytest -q
 - [ ] Проверить `/health` как liveness: `HTTP 200`, `status = "ok"`, `probe = "liveness"`, `runtime_mode`.
 - [ ] Проверить `/ready` как readiness: `HTTP 503` допустим и ожидаем при незакрытых gates.
 - [ ] Проверить minimal `WS /ws/stream` session: `control.clear_text` возвращает `control.ack`.
-- [ ] Проверить error path: valid JPEG без live pipeline возвращает `runtime_unavailable`.
+- [ ] Проверить live-success path через controlled runtime fixture: valid JPEG возвращает `recognition.result`.
+- [ ] Проверить error path: valid JPEG при unavailable runtime возвращает `runtime_unavailable`.
 - [ ] Проверить negative paths: `invalid_json`, `unsupported_contract_version`, `unsupported_control_action`, `frame_decode_failed`.
 - [ ] Убедиться, что tests не вводят `partial.result`, `final.result`, `session.start`, `session.stop` или JSON frame wrapper.
 
@@ -342,7 +343,7 @@ python3 -m uvicorn rsl_sign_recognition.asgi:app --app-dir src
 - [ ] Открыть `GET /ready` и убедиться, что `not_ready` / `HTTP 503` отображается как controlled live-readiness state, а не как crash UI.
 - [ ] Подключиться к `WS /ws/stream`.
 - [ ] Отправить `control.clear_text` по `contract v1` и обработать `control.ack`.
-- [ ] Отправить минимальный JPEG binary frame и обработать `runtime_unavailable` как non-recoverable session-level state.
+- [ ] Отправить минимальный JPEG binary frame и обработать либо `recognition.result`, либо `runtime_unavailable` как non-recoverable session-level state, в зависимости от готовности runtime.
 - [ ] Проверить, что frontend корректно показывает not-ready/runtime-unavailable state.
 - [ ] Проверить, что frontend не ожидает production live recognition на этом этапе.
 - [ ] Проверить, что frontend не зависит от optional debug/runtime blocks и игнорирует неизвестные optional поля в совместимой линии `1.x`.
@@ -351,12 +352,12 @@ python3 -m uvicorn rsl_sign_recognition.asgi:app --app-dir src
 
 Ограничения, которые намеренно сохраняются после INT-02:
 
-- clean repo не содержит full live recognition pipeline;
-- `pose_words` inference wrapper, segmentation layer, pose feature layer и active artifact loader существуют как изолированные boundaries, но не связаны в live `WS /ws/stream`;
+- clean repo не содержит production-proof full live recognition pipeline;
+- `pose_words` inference wrapper, segmentation layer, pose feature layer и active artifact loader связаны с live `WS /ws/stream` через RT-06, но качество/готовность зависят от runtime dependencies и active artifacts;
 - реальные active ONNX artifacts не добавляются;
 - `/ready = 503` может оставаться нормальным состоянием текущей базы;
-- `runtime_unavailable` остается ожидаемым signal отсутствующего live pipeline;
-- contract-level `recognition.result` поддерживается как documented surface, но live backend сейчас может не отправлять его;
+- `runtime_unavailable` остается ожидаемым signal отсутствующего, неготового или не загруженного live runtime;
+- contract-level `recognition.result` поддерживается как documented surface и может приходить из live backend при готовом runtime;
 - production rollout, hardening и full e2e validation остаются future scope.
 
-Главное правило для web team: уже можно подключать UI к liveness/readiness/WS boundary и error handling, но нельзя считать это готовым распознаванием жестов.
+Главное правило для web team: уже можно подключать UI к liveness/readiness/WS boundary, error handling и `recognition.result` parsing по contract v1, но нельзя считать это production-ready распознаванием жестов без readiness promotion и manual validation.

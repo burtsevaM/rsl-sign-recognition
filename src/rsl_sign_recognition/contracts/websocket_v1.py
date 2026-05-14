@@ -19,6 +19,10 @@ def control_ack(action: str) -> dict[str, object]:
     )
 
 
+def recognition_result(payload: dict[str, object]) -> dict[str, object]:
+    return envelope("recognition.result", payload)
+
+
 def error_envelope(
     code: str,
     *,
@@ -106,12 +110,14 @@ def unsupported_contract_version_error() -> dict[str, object]:
     )
 
 
-def runtime_unavailable_error() -> dict[str, object]:
+def runtime_unavailable_error(
+    reason: str = "live_inference_pipeline_unavailable",
+) -> dict[str, object]:
     return error_envelope(
         "runtime_unavailable",
         message="Runtime is unavailable for the current session.",
         recoverable=False,
-        details={"reason": "live_inference_pipeline_unavailable"},
+        details={"reason": reason},
     )
 
 
