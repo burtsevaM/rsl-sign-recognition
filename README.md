@@ -224,7 +224,7 @@ RT-06 не добавляет новые message types, не реализует 
 - не объявляет `/ready = 200`, пока не закрыты `runtime_shell`, `active_artifacts`, `runtime_orchestrator` и `transport_surface`;
 - не имитирует `recognition.result`, если live runtime pipeline отсутствует.
 
-`/ready` использует четыре независимых gate-а. Missing manifest, invalid manifest, non-active profile или missing required files переводят `active_artifacts` в `false`; `LivePoseWordsRuntimeService` отдельно закрывает `runtime_orchestrator` только после реальной сборки live `pose_words` path; `LiveTransportSurface` закрывает `transport_surface` только когда `WS /ws/stream` действительно привязан к live runtime service boundary. Поэтому `active_artifacts=true` само по себе не означает готовность live runtime, а `/health=200` не означает `/ready=200`. В `mock` mode live readiness также остается `HTTP 503`.
+`/ready` использует четыре независимых gate-а. Missing manifest, invalid manifest, non-active profile или missing required files переводят `active_artifacts` в `false`; `LivePoseWordsRuntimeService` отдельно закрывает `runtime_orchestrator` только после реальной сборки live `pose_words` path; `LiveTransportSurface` закрывает `transport_surface` только когда `WS /ws/stream` действительно привязан к тому же live runtime service boundary, который использует runtime shell. Поэтому `active_artifacts=true` само по себе не означает готовность live runtime, `transport_surface=true` не доказывает готовность модели, а `/health=200` не означает `/ready=200`. В `mock` mode live readiness также остается `HTTP 503`.
 
 Пример локального запуска:
 

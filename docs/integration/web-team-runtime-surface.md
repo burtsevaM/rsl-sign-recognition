@@ -96,7 +96,7 @@ curl -i http://localhost:8000/health
 | `runtime_shell` | Сервис запущен в live mode и runtime shell не находится в заведомо unavailable state. | В `mock` mode gate должен быть `false` для live readiness. |
 | `active_artifacts` | Active manifest и required files для `pose_words` live path доступны по clean policy. | Валидный manifest закрывает только этот gate и не запускает ONNX sessions. |
 | `runtime_orchestrator` | `LivePoseWordsRuntimeService` реально собирает live `pose_words` path без controlled unavailable/invalid state. | `active_artifacts=true` само по себе не закрывает этот gate. |
-| `transport_surface` | `WS /ws/stream` связан с live runtime service boundary, а не только существует как endpoint. | Этот gate проверяет wiring; фактическую готовность backend dependencies отдельно показывает `runtime_orchestrator`. |
+| `transport_surface` | `WS /ws/stream` связан с тем же live runtime service boundary, который runtime shell использует для session creation, а не только существует как endpoint. | Этот gate проверяет binding/wiring; фактическую готовность backend dependencies отдельно показывает `runtime_orchestrator`. |
 
 Возможные HTTP статусы сейчас:
 
@@ -143,7 +143,7 @@ curl -i http://localhost:8000/health
 - позволять retry/reconnect только как пользовательское действие, а не бесконечный скрытый loop;
 - логировать `reason_codes` для диагностики.
 
-Важно: искусственно делать `/ready = 200` нельзя. Отсутствие active artifacts, live runtime orchestrator или live transport binding должно оставаться видимым через `HTTP 503`, gates и reason codes.
+Важно: искусственно делать `/ready = 200` нельзя. Отсутствие active artifacts, live runtime orchestrator или live transport binding к тому же service boundary должно оставаться видимым через `HTTP 503`, gates и reason codes. При этом `transport_surface=true` доказывает binding, а не готовность модели: за нее отвечает `runtime_orchestrator`.
 
 `/ready` остается pre-session truth. Если active manifest отсутствует, manifest невалиден, required artifact file отсутствует, runtime config невалиден, model loading падает, inference backend недоступен или WebSocket не привязан к live service boundary, web team должна видеть controlled `not_ready` / reason codes, а не successful live recognition. Readiness-level reason codes, на которые можно опираться в UI/логах:
 

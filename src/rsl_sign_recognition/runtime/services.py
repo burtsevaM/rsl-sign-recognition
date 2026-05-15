@@ -46,7 +46,7 @@ class RuntimeServiceRegistry:
             transport_surface=transport_surface
             or LiveTransportSurface(
                 ws_stream_path=settings.ws_stream_path,
-                pose_words_runtime=resolved_pose_words_runtime,
+                bound_pose_words_runtime=resolved_pose_words_runtime,
             ),
             pose_words_runtime=resolved_pose_words_runtime,
             runtime_hooks=tuple(runtime_hooks or ()),
@@ -78,7 +78,9 @@ class RuntimeServiceRegistry:
         runtime_shell = self.evaluate_runtime_shell()
         active_artifacts = self.artifact_gate.evaluate()
         runtime_orchestrator = self.pose_words_runtime.evaluate_readiness()
-        transport_surface = self.transport_surface.evaluate()
+        transport_surface = self.transport_surface.evaluate(
+            expected_pose_words_runtime=self.pose_words_runtime,
+        )
 
         reason_codes = tuple(
             dict.fromkeys(

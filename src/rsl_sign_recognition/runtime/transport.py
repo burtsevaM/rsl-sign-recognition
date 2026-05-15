@@ -13,10 +13,14 @@ class LiveTransportSurface:
     """Readiness boundary for the WebSocket surface linked to live runtime."""
 
     ws_stream_path: str = "/ws/stream"
-    pose_words_runtime: LivePoseWordsRuntimeService | None = None
+    bound_pose_words_runtime: LivePoseWordsRuntimeService | None = None
 
-    def evaluate(self) -> GateStatus:
-        if self.pose_words_runtime is None:
+    def evaluate(
+        self,
+        *,
+        expected_pose_words_runtime: LivePoseWordsRuntimeService,
+    ) -> GateStatus:
+        if self.bound_pose_words_runtime is not expected_pose_words_runtime:
             return GateStatus(
                 passed=False,
                 reason_codes=(

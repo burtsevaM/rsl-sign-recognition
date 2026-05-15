@@ -425,7 +425,7 @@ RT-02 расширяет RT-01 не новым runtime scope, а **докуме�
 - `runtime_shell` - live runtime shell выбран, собран и не находится в заведомо unavailable startup-state;
 - `active_artifacts` - для live path доступны все активные runtime artifacts, которые требуются выбранному pipeline;
 - `runtime_orchestrator` - live `pose_words` service boundary действительно собирается из active artifacts и runtime dependencies;
-- `transport_surface` - live transport surface поднят и связан с runtime shell так, чтобы `WS /ws/stream` обслуживал именно live path, а не mock substitute.
+- `transport_surface` - live transport surface поднят и связан с тем же runtime service boundary, который runtime shell отдает в `WS /ws/stream`, а не с mock substitute или соседним объектом.
 
 ### 13.4. Правила для readiness gates
 
@@ -486,12 +486,14 @@ Gate закрыт только если live runtime path выставляет �
 
 - HTTP probes доступны как service-level surface;
 - `WS /ws/stream` поднят как live transport endpoint;
+- transport binding указывает на тот же `LivePoseWordsRuntimeService`, который runtime shell использует для WebSocket session creation;
 - integration boundary не подменяет live path mock fixtures.
 
 Gate не закрыт, если:
 
 - transport поднят только для mock/integration harness;
 - live WebSocket surface не связан с runtime shell;
+- transport surface связан с другим runtime service object, а не с тем boundary, который видит `WS /ws/stream`;
 - WebSocket endpoint принимает transport-level сообщения, но не привязан к live runtime service boundary;
 - сервис отвечает на `/health`, но не способен принять live runtime traffic.
 

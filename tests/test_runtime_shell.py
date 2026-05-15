@@ -283,6 +283,36 @@ def test_ready_stays_not_ready_when_transport_is_not_linked_to_live_runtime(
     ]
 
 
+def test_ready_stays_not_ready_when_transport_is_bound_to_another_runtime(
+    tmp_path: Path,
+) -> None:
+    write_active_manifest(tmp_path)
+    readiness_runtime = StubPoseWordsRuntime(GateStatus(passed=True))
+    transport_runtime = StubPoseWordsRuntime(GateStatus(passed=True))
+    transport_surface = LiveTransportSurface(
+        ws_stream_path="/ws/stream",
+        bound_pose_words_runtime=transport_runtime,
+    )
+
+    with build_client(
+        tmp_path,
+        transport_surface=transport_surface,
+        pose_words_runtime=readiness_runtime,
+    ) as client:
+        response = client.get("/ready")
+
+    assert response.status_code == 503
+    assert response.json()["gates"] == {
+        "runtime_shell": True,
+        "active_artifacts": True,
+        "runtime_orchestrator": True,
+        "transport_surface": False,
+    }
+    assert response.json()["reason_codes"] == [
+        "transport_surface_not_linked_to_live_runtime_pipeline"
+    ]
+
+
 def test_ready_is_ready_only_when_all_live_gates_pass(tmp_path: Path) -> None:
     write_active_manifest(tmp_path)
     pose_words_runtime = StubPoseWordsRuntime(GateStatus(passed=True))
@@ -306,12 +336,48 @@ def test_ready_is_ready_only_when_all_live_gates_pass(tmp_path: Path) -> None:
 
 
 def test_transport_surface_requires_explicit_live_runtime_binding() -> None:
+    expected_runtime = StubPoseWordsRuntime(GateStatus(passed=True))
     transport_surface = LiveTransportSurface(ws_stream_path="/ws/stream")
 
-    assert transport_surface.evaluate().passed is False
-    assert transport_surface.evaluate().reason_codes == (
+    status = transport_surface.evaluate(
+        expected_pose_words_runtime=expected_runtime,
+    )
+
+    assert status.passed is False
+    assert status.reason_codes == (
         "transport_surface_not_linked_to_live_runtime_pipeline",
     )
+
+
+def test_transport_surface_rejects_different_live_runtime_binding() -> None:
+    expected_runtime = StubPoseWordsRuntime(GateStatus(passed=True))
+    bound_runtime = StubPoseWordsRuntime(GateStatus(passed=True))
+    transport_surface = LiveTransportSurface(
+        ws_stream_path="/ws/stream",
+        bound_pose_words_runtime=bound_runtime,
+    )
+
+    status = transport_surface.evaluate(
+        expected_pose_words_runtime=expected_runtime,
+    )
+
+    assert status.passed is False
+    assert status.reason_codes == (
+        "transport_surface_not_linked_to_live_runtime_pipeline",
+    )
+
+
+def test_transport_surface_passes_for_same_live_runtime_binding() -> None:
+    runtime = StubPoseWordsRuntime(GateStatus(passed=True))
+    transport_surface = LiveTransportSurface(
+        ws_stream_path="/ws/stream",
+        bound_pose_words_runtime=runtime,
+    )
+
+    status = transport_surface.evaluate(expected_pose_words_runtime=runtime)
+
+    assert status.passed is True
+    assert status.reason_codes == ()
 
 
 def test_asgi_entrypoint_exposes_fastapi_app() -> None:
