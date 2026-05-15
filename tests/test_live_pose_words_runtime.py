@@ -384,6 +384,20 @@ def test_live_pose_words_runtime_reports_unavailable_for_missing_manifest(
     assert state.pipeline is None
 
 
+def test_live_pose_words_runtime_readiness_uses_public_pipeline_reason_for_missing_manifest(
+    tmp_path: Path,
+) -> None:
+    service = LivePoseWordsRuntimeService.from_settings(
+        build_settings(tmp_path),
+        pipeline_factory=fake_pipeline_factory,
+    )
+
+    gate = service.evaluate_readiness()
+
+    assert gate.passed is False
+    assert gate.reason_codes == ("live_runtime_pipeline_unavailable",)
+
+
 def test_live_pose_words_runtime_reports_unavailable_for_missing_required_artifact(
     tmp_path: Path,
 ) -> None:
@@ -520,6 +534,44 @@ def test_live_pose_words_runtime_controls_pipeline_factory_failures(
     assert expected_exception in state.reason_codes
     assert state.missing_artifacts == ()
     assert state.pipeline is None
+
+
+@pytest.mark.parametrize(
+    ("factory_error", "expected_reason"),
+    [
+        (
+            ImportError("missing optional runtime dependency"),
+            "pose_words_runtime_dependency_unavailable",
+        ),
+        (
+            FileNotFoundError("runtime component disappeared"),
+            "pose_words_runtime_component_missing",
+        ),
+        (
+            ValueError("invalid runtime component"),
+            "pose_words_runtime_misconfigured",
+        ),
+    ],
+)
+def test_live_pose_words_runtime_readiness_maps_controlled_states_for_web_team(
+    tmp_path: Path,
+    factory_error: Exception,
+    expected_reason: str,
+) -> None:
+    write_active_pack(tmp_path)
+
+    def failing_pipeline_factory(_artifacts: Any):
+        raise factory_error
+
+    service = LivePoseWordsRuntimeService.from_settings(
+        build_settings(tmp_path),
+        pipeline_factory=failing_pipeline_factory,
+    )
+
+    gate = service.evaluate_readiness()
+
+    assert gate.passed is False
+    assert gate.reason_codes == (expected_reason,)
 
 
 def test_default_pose_words_pipeline_failure_is_controlled_without_onnxruntime(

@@ -10,12 +10,23 @@ from PIL import Image
 
 from rsl_sign_recognition.api.factory import create_app
 from rsl_sign_recognition.runtime.config import RuntimeMode, RuntimeShellSettings
+from rsl_sign_recognition.runtime.readiness import GateStatus
+from rsl_sign_recognition.runtime.services import RuntimeServiceRegistry
+
+
+class StubPoseWordsRuntime:
+    def __init__(self, status: GateStatus) -> None:
+        self._status = status
+
+    def evaluate_readiness(self) -> GateStatus:
+        return self._status
 
 
 def build_client(
     tmp_path: Path,
     *,
     runtime_mode: RuntimeMode = RuntimeMode.LIVE,
+    pose_words_runtime: StubPoseWordsRuntime | None = None,
 ) -> TestClient:
     settings = RuntimeShellSettings(
         runtime_mode=runtime_mode,
@@ -23,7 +34,15 @@ def build_client(
         active_manifest_path=tmp_path
         / "artifacts/runtime/active/pose_words/manifest.json",
     )
-    return TestClient(create_app(settings=settings))
+    services = (
+        RuntimeServiceRegistry.build(
+            settings,
+            pose_words_runtime=pose_words_runtime,
+        )
+        if pose_words_runtime is not None
+        else None
+    )
+    return TestClient(create_app(settings=settings, services=services))
 
 
 def write_active_artifact_manifest(tmp_path: Path) -> None:
@@ -121,7 +140,8 @@ def test_health_liveness_smoke_stays_green_when_live_runtime_is_not_ready(
     assert ready.json()["gates"] == {
         "runtime_shell": True,
         "active_artifacts": False,
-        "transport_surface": False,
+        "runtime_orchestrator": False,
+        "transport_surface": True,
     }
     assert ready.json()["reason_codes"] == [
         "active_manifest_missing",
@@ -129,12 +149,18 @@ def test_health_liveness_smoke_stays_green_when_live_runtime_is_not_ready(
     ]
 
 
-def test_ready_smoke_keeps_transport_not_ready_after_artifact_gate_passes(
+def test_ready_smoke_keeps_runtime_not_ready_after_artifact_gate_passes(
     tmp_path: Path,
 ) -> None:
     write_active_artifact_manifest(tmp_path)
+    pose_words_runtime = StubPoseWordsRuntime(
+        GateStatus(
+            passed=False,
+            reason_codes=("live_runtime_pipeline_unavailable",),
+        )
+    )
 
-    with build_client(tmp_path) as client:
+    with build_client(tmp_path, pose_words_runtime=pose_words_runtime) as client:
         response = client.get("/ready")
 
     assert response.status_code == 503
@@ -146,7 +172,8 @@ def test_ready_smoke_keeps_transport_not_ready_after_artifact_gate_passes(
         "gates": {
             "runtime_shell": True,
             "active_artifacts": True,
-            "transport_surface": False,
+            "runtime_orchestrator": False,
+            "transport_surface": True,
         },
         "reason_codes": ["live_runtime_pipeline_unavailable"],
     }
@@ -260,9 +287,7 @@ def test_mock_mode_smoke_does_not_make_live_readiness_ready(
     assert ready.json()["gates"] == {
         "runtime_shell": False,
         "active_artifacts": True,
-        "transport_surface": False,
+        "runtime_orchestrator": False,
+        "transport_surface": True,
     }
-    assert ready.json()["reason_codes"] == [
-        "runtime_mode_not_live",
-        "live_runtime_pipeline_unavailable",
-    ]
+    assert ready.json()["reason_codes"] == ["runtime_mode_not_live"]

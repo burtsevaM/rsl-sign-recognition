@@ -408,6 +408,7 @@ RT-02 расширяет RT-01 не новым runtime scope, а **докуме�
   "gates": {
     "runtime_shell": true,
     "active_artifacts": true,
+    "runtime_orchestrator": true,
     "transport_surface": true
   }
 }
@@ -423,7 +424,8 @@ RT-02 расширяет RT-01 не новым runtime scope, а **докуме�
 
 - `runtime_shell` - live runtime shell выбран, собран и не находится в заведомо unavailable startup-state;
 - `active_artifacts` - для live path доступны все активные runtime artifacts, которые требуются выбранному pipeline;
-- `transport_surface` - live transport surface поднят и связан с runtime shell так, чтобы `WS /ws/stream` обслуживал именно live path, а не mock substitute.
+- `runtime_orchestrator` - live `pose_words` service boundary действительно собирается из active artifacts и runtime dependencies;
+- `transport_surface` - live transport surface поднят и связан с тем же runtime service boundary, который runtime shell отдает в `WS /ws/stream`, а не с mock substitute или соседним объектом.
 
 ### 13.4. Правила для readiness gates
 
@@ -456,19 +458,43 @@ RT-02 не задает manifest schema сам по себе: shape manifest, pr
 - missing artifacts всегда означают `active_artifacts = false` и `HTTP 503` на `/ready`;
 - missing artifacts не должны ломать `/health`.
 
+#### `runtime_orchestrator`
+
+Gate закрыт только если live `pose_words` runtime service:
+
+- работает в `live` mode;
+- успешно инициализирует active runtime path через clean artifact loader;
+- собирает обязательные runtime components и dependencies без controlled unavailable/invalid state.
+
+Gate не закрыт, если:
+
+- active pack не позволяет собрать live pipeline;
+- runtime dependency недоступна;
+- обязательный runtime component отсутствует;
+- runtime config/model assembly находится в controlled invalid state.
+
+Для web team используются короткие readiness-level reason codes:
+
+- `live_runtime_pipeline_unavailable`;
+- `pose_words_runtime_dependency_unavailable`;
+- `pose_words_runtime_component_missing`;
+- `pose_words_runtime_misconfigured`.
+
 #### `transport_surface`
 
 Gate закрыт только если live runtime path выставляет документированную transport surface:
 
 - HTTP probes доступны как service-level surface;
 - `WS /ws/stream` поднят как live transport endpoint;
+- transport binding указывает на тот же `LivePoseWordsRuntimeService`, который runtime shell использует для WebSocket session creation;
 - integration boundary не подменяет live path mock fixtures.
 
 Gate не закрыт, если:
 
 - transport поднят только для mock/integration harness;
 - live WebSocket surface не связан с runtime shell;
-- WebSocket endpoint принимает transport-level сообщения, но inference/runtime pipeline еще отсутствует;
+- transport surface связан с другим runtime service object, а не с тем boundary, который видит `WS /ws/stream`;
+- WebSocket endpoint принимает transport-level сообщения, но не привязан к live runtime service boundary;
 - сервис отвечает на `/health`, но не способен принять live runtime traffic.
 
 ### 13.5. Missing artifacts и `runtime_unavailable`
@@ -512,7 +538,7 @@ Gate не закрыт, если:
 Это и есть честная clean boundary:
 
 - `mock` помогает web team и smoke automation до появления live runtime surface;
-- `live readiness` начинается только там, где закрыты `runtime_shell`, `active_artifacts` и `transport_surface`;
+- `live readiness` начинается только там, где закрыты `runtime_shell`, `active_artifacts`, `runtime_orchestrator` и `transport_surface`;
 - ни одна из этих формулировок не означает, что полный working runtime уже перенесён в clean repo.
 
 ### 13.7. RT-08 service-level `pose_words` orchestration
@@ -524,9 +550,9 @@ RT-08 добавляет внутренний service-level boundary для live
 - отсутствующий active manifest или missing required artifact возвращает controlled `status="unavailable"`;
 - некорректный manifest, invalid runtime config или model loading failure возвращают controlled `status="invalid"`;
 - недоступный inference backend или missing runtime component возвращает controlled `status="unavailable"`;
-- successful assembly возвращает `status="ready"` только на service-level boundary и не означает, что `WS /ws/stream` уже подключен к live inference.
+- successful assembly возвращает `status="ready"` только на service-level boundary и закрывает `runtime_orchestrator`, но не подменяет собой transport binding.
 
-RT-08 не добавляет новый protocol поверх contract v1, не меняет WebSocket handler и не использует validation/bootstrap directories или draft-only `config.yaml` как fallback. `transport_surface` остается отдельным gate и должен закрываться отдельной transport integration задачей.
+RT-08 не добавляет новый protocol поверх contract v1, не меняет WebSocket handler и не использует validation/bootstrap directories или draft-only `config.yaml` как fallback. `transport_surface` остается отдельным gate и закрывается только когда API wiring действительно привязано к live runtime service boundary.
 
 ### 13.8. RT-09 session state и decoder/runtime boundary
 
@@ -600,7 +626,7 @@ Mock/live boundary остается прежней:
 Эта semantics согласована с transport/readiness задачами:
 
 - RT-06 должен сериализовать domain/service states в существующий `contract v1`, а не добавлять новые message types;
-- RT-07 должен использовать readiness gates для pre-session truth и не выставлять `/ready = 200` при known unavailable live path;
+- RT-07 использует readiness gates для pre-session truth и не выставляет `/ready = 200` при known unavailable live path;
 - QA-03 должен отличать mock success, controlled unavailable, no-result/insufficient input и настоящий live `recognition.result`.
 
 ### 13.10. RT-05 umbrella boundary для live `pose_words` orchestration
@@ -641,7 +667,7 @@ RT-05 считается собранной только на service-level boun
 - frontend integration;
 - training/export;
 - улучшение модели, threshold tuning и production hardening;
-- изменение readiness `transport_surface` gate или объявление `/ready = 200` только на основании service-level runtime assembly.
+- объявление `/ready = 200` только на основании service-level runtime assembly без transport binding.
 
 ### 13.11. RT-06 WebSocket transport integration
 
@@ -658,4 +684,4 @@ RT-06 подключает существующий `WS /ws/stream` к RT-05 ses
 
 RT-06 не добавляет `partial.result`, `final.result`, `session.start`, `session.stop` или JSON wrapper для frame input. `contract v1` не меняется: меняется только backend wiring за существующим transport endpoint.
 
-Readiness promotion остается отдельной задачей. Даже после RT-06 `/ready` может оставаться `HTTP 503`, пока `transport_surface` gate не будет переведен в честное ready/not-ready состояние отдельным readiness increment.
+RT-07 переводит readiness в честное состояние для полного live path: `transport_surface` теперь означает реальное API wiring к `LivePoseWordsRuntimeService`, а `/ready = 200` возможен только когда одновременно закрыты shell, active artifacts, runtime orchestrator и live transport binding.

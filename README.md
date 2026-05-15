@@ -153,7 +153,7 @@ Wrapper сам не ищет active artifacts, не читает manifest, не 
 
 Loader валидирует JSON shape, profile markers, descriptors и безопасно резолвит `relative_path` относительно директории manifest. Absolute paths, empty paths и path traversal через `..` отклоняются controlled runtime failure. Optional files с `required: false` не валят readiness, если физически отсутствуют.
 
-Этот слой не создает ONNX sessions, не импортирует `onnxruntime` или MediaPipe, не копирует bootstrap files, не читает draft `backend/config.yaml` и не сканирует `artifacts/validation/...` или `artifacts/bootstrap/...` как fallback. Даже если `active_artifacts=true`, `/ready` остается `503`, пока `transport_surface=false` из-за отсутствующего live runtime pipeline.
+Этот слой не создает ONNX sessions, не импортирует `onnxruntime` или MediaPipe, не копирует bootstrap files, не читает draft `backend/config.yaml` и не сканирует `artifacts/validation/...` или `artifacts/bootstrap/...` как fallback. Даже если `active_artifacts=true`, `/ready` остается `503`, пока не закрыты `runtime_orchestrator` и `transport_surface`.
 
 ## RT-08 Live Pose Words Runtime Service
 
@@ -221,10 +221,10 @@ RT-06 не добавляет новые message types, не реализует 
 
 - не загружает `pose_words`, `words` или `letters`;
 - не реализует training/export или draft-only fallback logic;
-- не объявляет `/ready = 200`, пока не закрыты `runtime_shell`, `active_artifacts` и `transport_surface`;
+- не объявляет `/ready = 200`, пока не закрыты `runtime_shell`, `active_artifacts`, `runtime_orchestrator` и `transport_surface`;
 - не имитирует `recognition.result`, если live runtime pipeline отсутствует.
 
-`/ready` уже использует active artifact gate: missing manifest, invalid manifest, non-active profile или missing required files переводят `active_artifacts` в `false`. ART-03 добавляет минимальный technical active pack, поэтому `active_artifacts` может стать `true` при наличии committed required files; RT-05 добавляет service-level сборку `pose_words` path, session/runtime boundary и controlled failure semantics; RT-06 подключает `WS /ws/stream` к session boundary. При этом `LiveTransportSurface.evaluate()` по-прежнему остается отдельным readiness gate для RT-07, поэтому общий `/ready` может оставаться `HTTP 503`, пока readiness promotion не будет закрыт отдельной задачей.
+`/ready` использует четыре независимых gate-а. Missing manifest, invalid manifest, non-active profile или missing required files переводят `active_artifacts` в `false`; `LivePoseWordsRuntimeService` отдельно закрывает `runtime_orchestrator` только после реальной сборки live `pose_words` path; `LiveTransportSurface` закрывает `transport_surface` только когда `WS /ws/stream` действительно привязан к тому же live runtime service boundary, который использует runtime shell. Поэтому `active_artifacts=true` само по себе не означает готовность live runtime, `transport_surface=true` не доказывает готовность модели, а `/health=200` не означает `/ready=200`. В `mock` mode live readiness также остается `HTTP 503`.
 
 Пример локального запуска:
 

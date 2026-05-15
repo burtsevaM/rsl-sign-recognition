@@ -24,6 +24,7 @@ from rsl_sign_recognition.runtime.artifacts import (
     ResolvedActiveArtifacts,
 )
 from rsl_sign_recognition.runtime.config import RuntimeMode, RuntimeShellSettings
+from rsl_sign_recognition.runtime.readiness import GateStatus
 
 
 class LivePoseWordsRuntimeStatus(str, Enum):
@@ -353,6 +354,17 @@ class LivePoseWordsRuntimeService:
             )
 
         return self._ready_state(artifacts, pipeline)
+
+    def evaluate_readiness(self) -> GateStatus:
+        """Return the public readiness view of the live pose_words orchestrator."""
+
+        state = self.initialize()
+        if state.available:
+            return GateStatus(passed=True)
+        return GateStatus(
+            passed=False,
+            reason_codes=_readiness_reason_codes_for_state(state),
+        )
 
     def _component_failure_state(
         self,
@@ -805,6 +817,32 @@ def _metadata_reason_codes(metadata: dict[str, Any]) -> tuple[str, ...]:
     if isinstance(phase, str) and phase:
         reason_codes.append(f"phase:{phase}")
     return tuple(reason_codes)
+
+
+def _readiness_reason_codes_for_state(
+    state: LivePoseWordsRuntimeState,
+) -> tuple[str, ...]:
+    reason_codes = set(state.reason_codes)
+    if "runtime_mode_not_live" in reason_codes:
+        return ("runtime_mode_not_live",)
+
+    mapped: list[str] = []
+    if {
+        "inference_backend_unavailable",
+        "pose_extraction_backend_unavailable",
+    } & reason_codes:
+        mapped.append("pose_words_runtime_dependency_unavailable")
+    if "pose_words_runtime_component_missing" in reason_codes:
+        mapped.append("pose_words_runtime_component_missing")
+    if {
+        "pose_words_runtime_config_invalid",
+        "pose_words_model_loading_failed",
+    } & reason_codes:
+        mapped.append("pose_words_runtime_misconfigured")
+
+    if mapped:
+        return tuple(dict.fromkeys(mapped))
+    return ("live_runtime_pipeline_unavailable",)
 
 
 __all__ = [

@@ -37,13 +37,18 @@ class RuntimeServiceRegistry:
         pose_words_runtime: LivePoseWordsRuntimeService | None = None,
         runtime_hooks: Sequence[RuntimeReadinessHook] | None = None,
     ) -> "RuntimeServiceRegistry":
+        resolved_pose_words_runtime = (
+            pose_words_runtime or LivePoseWordsRuntimeService.from_settings(settings)
+        )
         return cls(
             settings=settings,
             artifact_gate=artifact_gate or ActiveArtifactGate(settings.active_manifest_path),
             transport_surface=transport_surface
-            or LiveTransportSurface(ws_stream_path=settings.ws_stream_path),
-            pose_words_runtime=pose_words_runtime
-            or LivePoseWordsRuntimeService.from_settings(settings),
+            or LiveTransportSurface(
+                ws_stream_path=settings.ws_stream_path,
+                bound_pose_words_runtime=resolved_pose_words_runtime,
+            ),
+            pose_words_runtime=resolved_pose_words_runtime,
             runtime_hooks=tuple(runtime_hooks or ()),
         )
 
@@ -72,13 +77,17 @@ class RuntimeServiceRegistry:
     def evaluate_readiness(self) -> ReadinessSnapshot:
         runtime_shell = self.evaluate_runtime_shell()
         active_artifacts = self.artifact_gate.evaluate()
-        transport_surface = self.transport_surface.evaluate()
+        runtime_orchestrator = self.pose_words_runtime.evaluate_readiness()
+        transport_surface = self.transport_surface.evaluate(
+            expected_pose_words_runtime=self.pose_words_runtime,
+        )
 
         reason_codes = tuple(
             dict.fromkeys(
                 [
                     *runtime_shell.reason_codes,
                     *active_artifacts.reason_codes,
+                    *runtime_orchestrator.reason_codes,
                     *transport_surface.reason_codes,
                 ]
             )
@@ -89,6 +98,7 @@ class RuntimeServiceRegistry:
             gates={
                 "runtime_shell": runtime_shell.passed,
                 "active_artifacts": active_artifacts.passed,
+                "runtime_orchestrator": runtime_orchestrator.passed,
                 "transport_surface": transport_surface.passed,
             },
             reason_codes=reason_codes,
