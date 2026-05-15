@@ -337,7 +337,7 @@ Live-ready profile должен одновременно:
 - `active_manifest_path_traversal_rejected` — descriptor пытается выйти из manifest directory;
 - `active_required_artifacts_missing` — отсутствует хотя бы один required live artifact.
 
-Эти reason codes влияют только на `active_artifacts` gate. `/ready` может оставаться `HTTP 503` даже при `active_artifacts=true`, если другие gates, например `transport_surface`, еще не закрыты.
+Эти reason codes влияют только на `active_artifacts` gate. `/ready` может оставаться `HTTP 503` даже при `active_artifacts=true`, если не закрыты `runtime_orchestrator` или `transport_surface`: валидный active pack сам по себе не доказывает, что live service boundary собрался и что WebSocket transport действительно привязан к нему.
 
 Для non-active профилей правило такое:
 

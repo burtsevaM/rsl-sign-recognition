@@ -95,7 +95,8 @@ curl -i http://localhost:8000/health
 | --- | --- | --- |
 | `runtime_shell` | Сервис запущен в live mode и runtime shell не находится в заведомо unavailable state. | В `mock` mode gate должен быть `false` для live readiness. |
 | `active_artifacts` | Active manifest и required files для `pose_words` live path доступны по clean policy. | Валидный manifest закрывает только этот gate и не запускает ONNX sessions. |
-| `transport_surface` | `WS /ws/stream` связан с live runtime pipeline, а не только с transport/error boundary. | RT-06 подключает WebSocket к session boundary, но readiness promotion остается отдельной задачей RT-07; gate пока может честно оставаться `false`: `live_runtime_pipeline_unavailable`. |
+| `runtime_orchestrator` | `LivePoseWordsRuntimeService` реально собирает live `pose_words` path без controlled unavailable/invalid state. | `active_artifacts=true` само по себе не закрывает этот gate. |
+| `transport_surface` | `WS /ws/stream` связан с live runtime service boundary, а не только существует как endpoint. | Этот gate проверяет wiring; фактическую готовность backend dependencies отдельно показывает `runtime_orchestrator`. |
 
 Возможные HTTP статусы сейчас:
 
@@ -113,7 +114,8 @@ curl -i http://localhost:8000/health
   "gates": {
     "runtime_shell": true,
     "active_artifacts": false,
-    "transport_surface": false
+    "runtime_orchestrator": false,
+    "transport_surface": true
   },
   "reason_codes": [
     "active_manifest_missing",
@@ -129,6 +131,7 @@ curl -i http://localhost:8000/health
 - `runtime_mode` - `live` или `mock`;
 - `gates.runtime_shell`;
 - `gates.active_artifacts`;
+- `gates.runtime_orchestrator`;
 - `gates.transport_surface`;
 - `reason_codes`, если поле присутствует.
 
@@ -140,9 +143,16 @@ curl -i http://localhost:8000/health
 - позволять retry/reconnect только как пользовательское действие, а не бесконечный скрытый loop;
 - логировать `reason_codes` для диагностики.
 
-Важно: искусственно делать `/ready = 200` нельзя. Отсутствие live pipeline или active artifacts должно оставаться видимым через `HTTP 503`, gates и reason codes.
+Важно: искусственно делать `/ready = 200` нельзя. Отсутствие active artifacts, live runtime orchestrator или live transport binding должно оставаться видимым через `HTTP 503`, gates и reason codes.
 
-Для будущей RT-07 интеграции `/ready` должен оставаться pre-session truth. Если active manifest отсутствует, manifest невалиден, required artifact file отсутствует, runtime config невалиден, model loading падает или inference backend недоступен, web team должна видеть controlled `not_ready` / reason codes, а не successful live recognition. `contract v1` для WebSocket от этого не меняется.
+`/ready` остается pre-session truth. Если active manifest отсутствует, manifest невалиден, required artifact file отсутствует, runtime config невалиден, model loading падает, inference backend недоступен или WebSocket не привязан к live service boundary, web team должна видеть controlled `not_ready` / reason codes, а не successful live recognition. Readiness-level reason codes, на которые можно опираться в UI/логах:
+
+- artifact gate: `active_manifest_missing`, `active_required_artifacts_missing` и другие `active_*` invalid-state codes из artifact policy;
+- orchestrator gate: `live_runtime_pipeline_unavailable`, `pose_words_runtime_dependency_unavailable`, `pose_words_runtime_component_missing`, `pose_words_runtime_misconfigured`;
+- transport gate: `transport_surface_not_linked_to_live_runtime_pipeline`;
+- live/mock boundary: `runtime_mode_not_live`.
+
+`contract v1` для WebSocket от этого не меняется.
 
 ## 5. `WS /ws/stream`: contract v1 expectations
 
@@ -297,15 +307,14 @@ Successful mock smoke доказывает только parsing, UI state handli
 
 ### Live behavior
 
-Дальнейший live behavior потребует отдельных runtime/artifact/readiness задач:
+Дальнейший live behavior потребует отдельных runtime/artifact/hardening задач:
 
 - реальных active artifacts в `artifacts/runtime/active/pose_words/`;
-- readiness promotion для `transport_surface`;
 - manual validation поверх реального camera/video input;
 - подтверждения model quality/stability для `frame -> pose extraction -> segmentation -> classifier -> recognition.result`;
 - полноценной проверки live recognition с web team.
 
-`/ready` должен стать `HTTP 200` только при закрытых gates. До readiness promotion безопасное UI-ожидание такое: backend может быть online, `WS /ws/stream` может быть функционален, но live recognition все еще может быть unavailable/not ready в конкретной session.
+`/ready` возвращает `HTTP 200` только при закрытых gates. Безопасное UI-ожидание такое: backend может быть online, `WS /ws/stream` может быть функционален, но live recognition все еще может быть unavailable/not ready, если orchestrator или его зависимости не готовы.
 
 ## 7. Verification checklist
 
@@ -360,4 +369,4 @@ python3 -m uvicorn rsl_sign_recognition.asgi:app --app-dir src
 - contract-level `recognition.result` поддерживается как documented surface и может приходить из live backend при готовом runtime;
 - production rollout, hardening и full e2e validation остаются future scope.
 
-Главное правило для web team: уже можно подключать UI к liveness/readiness/WS boundary, error handling и `recognition.result` parsing по contract v1, но нельзя считать это production-ready распознаванием жестов без readiness promotion и manual validation.
+Главное правило для web team: уже можно подключать UI к liveness/readiness/WS boundary, error handling и `recognition.result` parsing по contract v1, но нельзя считать это production-ready распознаванием жестов без manual validation и дальнейшего hardening.
