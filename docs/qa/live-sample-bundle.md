@@ -26,9 +26,9 @@ Bundle нужен не для offline evaluation и не для демонстр
 
 ## 4. Samples
 
-| sample id | label | expected label | source | format | frames / duration | local path | limitations |
+| sample id | label | expected label | source | format | frames / duration / fps | local path | limitations |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| `slovo_privet_f17a6060` | `привет` | `привет` | `Slovo Russian Sign Language Dataset`, public example video `f17a6060-6ced-4bd1-9886-8578cfbb864f.mp4` | `MP4` | `112 frames` | `data/live_samples/videos/slovo-privet-f17a6060.mp4` | Один sample не является benchmark-ом; качество live recognition нужно отдельно подтвердить в `QA-03`; sample хранится как real video input, а не как готовые features. |
+| `slovo_privet_f17a6060` | `привет` | `привет` | `Slovo Russian Sign Language Dataset`, public example video `f17a6060-6ced-4bd1-9886-8578cfbb864f.mp4` | `MP4` | `112 frames / 3.733333 s / 30 fps` | `data/live_samples/videos/slovo-privet-f17a6060.mp4` | Один sample не является benchmark-ом; качество live recognition нужно отдельно подтвердить в `QA-03`; sample хранится как real video input, а не как готовые features. |
 
 Machine-readable metadata хранится в [data/live_samples/manifest.json](../../data/live_samples/manifest.json).
 
@@ -36,10 +36,15 @@ Machine-readable metadata хранится в [data/live_samples/manifest.json](
 
 Sample взят из публичного примера проекта `Slovo: Russian Sign Language Dataset and Models`:
 
-- upstream repository: `hukenovs/slovo`;
+- upstream repository: `https://github.com/hukenovs/slovo`;
 - upstream path: `examples/f17a6060-6ced-4bd1-9886-8578cfbb864f.mp4`;
-- license: `Creative Commons Attribution-ShareAlike 4.0 International`;
+- license: `CC BY-SA 4.0`;
+- license URL: `https://creativecommons.org/licenses/by-sa/4.0/`;
+- attribution: `Slovo Russian Sign Language Dataset and Models, hukenovs/slovo`;
+- sample content: не модифицировался относительно upstream; byte-level checksum совпадает, изменено только repository-local имя файла;
 - checksum локальной копии: `sha256=98da3c5da34c473e5c1909db66c1fc81ce694f9ff59db1d392920ecf7bcf17f4`.
+
+При дальнейшем использовании sample-а нужно сохранять attribution из manifest. Upstream README описывает dataset как работу под вариантом `Creative Commons Attribution-ShareAlike 4.0 International License`; для bundle-а это зафиксировано как `CC BY-SA 4.0` с отдельным `license_url`.
 
 Выбор sample-а связан с текущим runtime contour:
 
@@ -74,7 +79,7 @@ shasum -a 256 data/live_samples/videos/slovo-privet-f17a6060.mp4
 
 1. прочитать `data/live_samples/manifest.json`;
 2. взять MP4 sample по `local_path`;
-3. декодировать video в последовательность RGB/JPEG frames без перехода к feature clips;
+3. использовать `duration_seconds` и `fps`, чтобы корректно декодировать MP4 в последовательность RGB/JPEG frames и при необходимости имитировать real-time streaming cadence;
 4. поднять backend и убедиться, что `/ready` вернул `HTTP 200`;
 5. открыть `WS /ws/stream`;
 6. отправить кадры как binary JPEG packets в документированном live path;
@@ -101,6 +106,8 @@ shasum -a 256 data/live_samples/videos/slovo-privet-f17a6060.mp4
 - Bundle пока минимален: он содержит только один gesture sample.
 - Один реальный sample не доказывает устойчивое качество модели и не заменяет benchmark.
 - Текущий выбор опирается на более сильный offline signal для `привет`, но offline validation все еще synthetic и не гарантирует успешный live result.
+- `пока` не добавлен, потому что в текущей проверке не найден сопоставимо переносимый и явно верифицируемый real-video source такого же качества; лучше оставить один честный sample, чем добавить сомнительный второй.
+- При расширении bundle-а нельзя напрямую складывать в репозиторий большие видео, тяжелые датасеты, model dumps или artifact dumps. Если bundle станет тяжелым, нужен внешний источник, checksum и инструкция размещения.
 - Перед закрытием `QA-03` нужен отдельный ручной или automated прогон через настоящий backend/WebSocket path.
 - В этой задаче `QA-03` smoke script не реализуется, `/ready` и runtime logic не меняются.
 
