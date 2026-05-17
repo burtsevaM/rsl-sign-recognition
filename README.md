@@ -79,6 +79,7 @@
 - [docs/artifact-policy.md](docs/artifact-policy.md) — target policy для active runtime artifact manifest, profiles и clean load path
 - [docs/artifacts/pose_words-active-pack.md](docs/artifacts/pose_words-active-pack.md) — ART-03 active artifact pack layout, source mapping, labels/class ids и readiness checks
 - [docs/validation/pose_words-offline-quality.md](docs/validation/pose_words-offline-quality.md) — PW-06 synthetic offline quality validation для active `pose_words` pack
+- [docs/qa/live-sample-bundle.md](docs/qa/live-sample-bundle.md) — DATA-01 portable live sample bundle для будущего QA-03 e2e smoke
 - [docs/mig-02-runtime-required-migration-governance.md](docs/mig-02-runtime-required-migration-governance.md) — governance guardrails и source-to-target mapping для future runtime-required migration issues
 - [docs/qa-01-smoke-test-strategy.md](docs/qa-01-smoke-test-strategy.md) — минимальная smoke test strategy для contract, mock, backend smoke и manual checks
 - [docs/int-01-web-team-handoff-notes.md](docs/int-01-web-team-handoff-notes.md) — минимальные handoff notes для web team вокруг clean runtime surface
