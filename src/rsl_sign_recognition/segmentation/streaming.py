@@ -431,5 +431,26 @@ class StreamingBioSegmenter:
         result.decode_latency_ms = decode_latency_ms
         return result
 
+    def flush_active_segments(self) -> StreamingBioResult:
+        """Emit the latest active segments at an explicit live boundary."""
+
+        if not self._has_run_inference:
+            return self._result(ran_inference=False)
+
+        new_sign, self._last_emitted_sign_end = self._apply_cool_off(
+            list(self._latest_sign_segments),
+            last_end=self._last_emitted_sign_end,
+            emitted_keys=self._emitted_sign_keys,
+        )
+        new_phrase, self._last_emitted_phrase_end = self._apply_cool_off(
+            list(self._latest_phrase_segments),
+            last_end=self._last_emitted_phrase_end,
+            emitted_keys=self._emitted_phrase_keys,
+        )
+        result = self._result(ran_inference=True)
+        result.sign_segments = new_sign
+        result.phrase_segments = new_phrase
+        return result
+
 
 __all__ = ["BioSegmentationModel", "StreamingBioSegmenter"]

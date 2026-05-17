@@ -69,6 +69,17 @@ class FakeFailingPoseFeatureService:
         raise self.exc
 
 
+class FakeNoHandPoseFeatureResult:
+    feature_vector = None
+    hand_present = False
+    aux = {"reason": "no_hand_detected"}
+
+
+class FakeNoHandPoseFeatureService:
+    def process_rgb_frame(self, rgb_frame: np.ndarray):
+        return FakeNoHandPoseFeatureResult()
+
+
 class FakeBioSegmenterModel:
     def __init__(
         self,
@@ -246,6 +257,15 @@ def fake_pipeline_factory_with_recognition(artifacts):
     )
 
 
+def fake_pipeline_factory_with_active_recognition(artifacts):
+    return build_pose_words_runtime_pipeline(
+        artifacts,
+        extractor_factory=FakeExtractor,
+        classifier_factory=FakeRecognizingClassifier,
+        segmenter_model_factory=FakeActiveSegmenterModel,
+    )
+
+
 def fake_pipeline_factory_with_pose_feature_error(exc: Exception):
     def factory(artifacts):
         pipeline = fake_pipeline_factory(artifacts)
@@ -255,6 +275,14 @@ def fake_pipeline_factory_with_pose_feature_error(exc: Exception):
         )
 
     return factory
+
+
+def fake_pipeline_factory_with_no_hand_boundary(artifacts):
+    pipeline = fake_pipeline_factory_with_active_recognition(artifacts)
+    return replace(
+        pipeline,
+        pose_features=FakeNoHandPoseFeatureService(),
+    )
 
 
 def create_session(
@@ -308,6 +336,28 @@ def test_live_pose_words_runtime_initializes_from_active_manifest(
     assert state.pipeline.feature_dim == 159
     assert state.pipeline.no_event_index == 0
     assert state.pipeline.segmenter.window == 64
+
+
+def test_live_pose_words_runtime_uses_active_pack_norm_flags(
+    tmp_path: Path,
+) -> None:
+    write_active_pack(
+        tmp_path,
+        segmentation_runtime_config=(
+            '{"window_size": 64, "norm_flags": '
+            '{"use_shoulder_norm": false, "use_hands_3d_norm": false}}'
+        ),
+    )
+    service = LivePoseWordsRuntimeService.from_settings(
+        build_settings(tmp_path),
+        pipeline_factory=fake_pipeline_factory,
+    )
+
+    state = service.initialize()
+
+    assert state.pipeline is not None
+    assert state.pipeline.pose_features.config.apply_shoulder_norm is False
+    assert state.pipeline.pose_features.config.canonical_hands_3d is False
 
 
 def test_rt05_service_level_runtime_path_is_orchestrated_without_transport(
@@ -365,6 +415,33 @@ def test_rt05_service_level_runtime_path_is_orchestrated_without_transport(
     assert second_event.recognition.label == "привет"
     assert second_event.recognition.confidence == pytest.approx(0.9)
     assert "contract_version" not in second_event.as_payload()
+
+
+def test_live_pose_words_runtime_flushes_active_segment_on_no_hand_boundary(
+    tmp_path: Path,
+) -> None:
+    session = create_session(
+        tmp_path,
+        pipeline_factory=fake_pipeline_factory_with_active_recognition,
+    )
+    first_event = session.push_feature(np.ones(159, dtype=np.float32))
+    second_event = session.push_feature(np.ones(159, dtype=np.float32))
+    assert first_event.status is PoseWordsRuntimeEventStatus.NO_RESULT
+    assert second_event.status is PoseWordsRuntimeEventStatus.NO_RESULT
+    assert second_event.reason_code == "no_completed_segment"
+
+    session = create_session(
+        tmp_path,
+        pipeline_factory=fake_pipeline_factory_with_no_hand_boundary,
+    )
+    session.push_feature(np.ones(159, dtype=np.float32))
+    session.push_feature(np.ones(159, dtype=np.float32))
+
+    flushed = session.push_frame(np.zeros((2, 2, 3), dtype=np.uint8))
+
+    assert flushed.status is PoseWordsRuntimeEventStatus.RESULT
+    assert flushed.recognition is not None
+    assert flushed.recognition.label == "привет"
 
 
 def test_live_pose_words_runtime_reports_unavailable_for_missing_manifest(
