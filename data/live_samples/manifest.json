@@ -1,0 +1,31 @@
+{
+  "schema_version": 1,
+  "bundle_id": "DATA-01-live-sample-bundle-v1",
+  "purpose": "portable_live_input_for_QA-03",
+  "storage_mode": "tracked_in_repository",
+  "bundle_root": "data/live_samples",
+  "samples": [
+    {
+      "sample_id": "slovo_privet_f17a6060",
+      "label": "привет",
+      "expected_label": "привет",
+      "source": {
+        "name": "Slovo Russian Sign Language Dataset example video",
+        "origin": "hukenovs/slovo",
+        "upstream_path": "examples/f17a6060-6ced-4bd1-9886-8578cfbb864f.mp4",
+        "license": "Creative Commons Attribution-ShareAlike 4.0 International"
+      },
+      "format": "video/mp4",
+      "frame_count": 112,
+      "local_path": "data/live_samples/videos/slovo-privet-f17a6060.mp4",
+      "sha256": "98da3c5da34c473e5c1909db66c1fc81ce694f9ff59db1d392920ecf7bcf17f4",
+      "byte_size": 3052259,
+      "live_input": true,
+      "limitations": [
+        "single-sample bundle; not a benchmark or production-quality proof",
+        "sample is intended for future manual/e2e smoke verification against the current active runtime",
+        "live recognition result still requires manual confirmation in the future QA-03 run"
+      ]
+    }
+  ]
+}
