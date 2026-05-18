@@ -593,13 +593,45 @@ class PoseWordsLiveSession:
 
         if pose_result.feature_vector is None:
             reason = pose_result.aux.get("reason")
+            flushed = self._flush_pending_segment(hand_present=False)
+            if flushed is not None:
+                return flushed
             return self._no_result(
                 str(reason) if isinstance(reason, str) and reason else "pose_not_detected",
                 hand_present=False,
             )
         if not pose_result.hand_present:
+            flushed = self._flush_pending_segment(hand_present=False)
+            if flushed is not None:
+                return flushed
             return self._no_result("no_hand_detected", hand_present=False)
         return self.push_feature(pose_result.feature_vector, hand_present=True)
+
+    def _flush_pending_segment(
+        self,
+        *,
+        hand_present: bool | None,
+    ) -> PoseWordsRuntimeEvent | None:
+        flush = getattr(self.pipeline.segmenter, "flush_active_segments", None)
+        if not callable(flush):
+            return None
+        try:
+            segmentation = flush()
+        except (ImportError, OSError, RuntimeError, TypeError, ValueError) as exc:
+            return self._error(
+                "decoder_runtime_failed",
+                exception=exc,
+                hand_present=hand_present,
+            )
+        if not bool(segmentation.ran_inference):
+            return None
+        if not (segmentation.sign_segments or segmentation.phrase_segments):
+            return None
+        return self._decode_segmentation_result(
+            segmentation,
+            feature_index=self.buffer.snapshot().end_index or 0,
+            hand_present=hand_present,
+        )
 
     def push_feature(
         self,

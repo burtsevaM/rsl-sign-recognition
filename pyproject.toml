@@ -21,13 +21,18 @@ dev = [
   "pytest>=8.4,<9.0",
 ]
 pose-extraction = [
-  "mediapipe>=0.10,<1.0",
+  "mediapipe>=0.10,<0.10.30",
 ]
 segmentation = [
   "onnxruntime>=1.18,<2.0",
 ]
 pose-words-inference = [
   "onnxruntime>=1.18,<2.0",
+]
+e2e-smoke = [
+  "imageio>=2.37,<3.0",
+  "imageio-ffmpeg>=0.6,<1.0",
+  "websockets>=15,<17",
 ]
 
 [tool.pytest.ini_options]

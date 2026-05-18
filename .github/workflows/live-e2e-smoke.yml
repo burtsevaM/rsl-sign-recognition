@@ -1,0 +1,65 @@
+name: Live E2E Smoke
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  live-e2e-smoke:
+    name: Live E2E Smoke
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install live smoke dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m pip install --upgrade pip
+          python -m pip install -e '.[pose-extraction,pose-words-inference,segmentation,e2e-smoke]'
+
+      - name: Start backend
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m uvicorn rsl_sign_recognition.asgi:app --app-dir src > live-e2e-backend.log 2>&1 &
+          echo "$!" > live-e2e-backend.pid
+
+      - name: Wait for live readiness
+        shell: bash
+        run: |
+          set -euo pipefail
+          for _ in $(seq 1 60); do
+            if curl --fail --silent http://127.0.0.1:8000/health >/dev/null \
+              && curl --fail --silent http://127.0.0.1:8000/ready >/dev/null; then
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "Backend did not become live-ready within 120 seconds."
+          cat live-e2e-backend.log || true
+          exit 1
+
+      - name: Run live smoke
+        shell: bash
+        run: |
+          set -euo pipefail
+          python scripts/run_live_e2e_smoke.py --base-url http://127.0.0.1:8000 | tee live-e2e-smoke.log
+
+      - name: Upload live smoke logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: live-e2e-smoke-logs
+          path: |
+            live-e2e-backend.log
+            live-e2e-smoke.log

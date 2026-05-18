@@ -127,6 +127,22 @@ def test_streaming_active_sign_progress_can_exist_without_completed_segment() ->
     assert result.active_sign_progress == 0.5
 
 
+def test_streaming_flush_emits_active_sign_segment_once() -> None:
+    model = IndexPatternModel(sign={0: "B", 1: "I"})
+    segmenter = StreamingBioSegmenter(model=model, window=2, step=1, min_len=1)
+
+    segmenter.update(_feature(0))
+    active = segmenter.update(_feature(1))
+    flushed = segmenter.flush_active_segments()
+    repeated = segmenter.flush_active_segments()
+
+    assert active.sign_segments == []
+    assert [(segment.start, segment.end) for segment in flushed.sign_segments] == [
+        (0, 1)
+    ]
+    assert repeated.sign_segments == []
+
+
 def test_streaming_cool_off_suppresses_close_duplicate_segments() -> None:
     model = IndexPatternModel(
         sign={0: "B", 1: "I", 2: "O", 3: "B", 4: "I", 5: "O"}

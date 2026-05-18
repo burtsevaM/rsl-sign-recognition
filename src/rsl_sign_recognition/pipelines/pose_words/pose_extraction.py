@@ -85,7 +85,8 @@ class PoseExtractor:
 
         self.config = resolved_config
         self._mp = self._load_mediapipe()
-        self._holistic = self._mp.solutions.holistic.Holistic(
+        holistic_cls = self._resolve_holistic_cls(self._mp)
+        self._holistic = holistic_cls(
             static_image_mode=False,
             model_complexity=self.config.model_complexity,
             smooth_landmarks=True,
@@ -110,6 +111,18 @@ class PoseExtractor:
             ) from exc
         except Exception as exc:  # pragma: no cover - environment dependent
             raise ImportError("failed to import mediapipe for PoseExtractor") from exc
+
+    @staticmethod
+    def _resolve_holistic_cls(module: Any) -> Any:
+        solutions = getattr(module, "solutions", None)
+        holistic = getattr(solutions, "holistic", None)
+        holistic_cls = getattr(holistic, "Holistic", None)
+        if holistic_cls is None:
+            raise ImportError(
+                "mediapipe must expose solutions.holistic.Holistic for PoseExtractor. "
+                "Install a compatible pose extraction dependency set."
+            )
+        return holistic_cls
 
     def close(self) -> None:
         holistic = getattr(self, "_holistic", None)

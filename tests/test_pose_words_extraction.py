@@ -72,6 +72,22 @@ def test_pose_extractor_reports_clear_error_when_mediapipe_is_missing(
         PoseExtractor()
 
 
+def test_pose_extractor_reports_clear_error_for_incompatible_mediapipe(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(
+        "rsl_sign_recognition.pipelines.pose_words.pose_extraction.importlib.import_module",
+        lambda name: (
+            SimpleNamespace()
+            if name == "mediapipe"
+            else importlib.import_module(name)
+        ),
+    )
+
+    with pytest.raises(ImportError, match="must expose solutions.holistic.Holistic"):
+        PoseExtractor()
+
+
 class _FakeLandmark:
     def __init__(self, x: float, y: float, z: float, visibility: float | None = None):
         self.x = x
