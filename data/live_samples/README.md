@@ -1,11 +1,27 @@
-# Live sample bundle для DATA-01
+# Live sample bundle для DATA-02 / QA-04
 
-Эта директория хранит минимальный переносимый bundle реального video input для будущего `QA-03` smoke через live runtime path.
+Эта директория хранит переносимый bundle реального video input для live e2e smoke через текущий active runtime/model setup.
 
 ## Содержимое
 
 - `manifest.json` - machine-readable metadata bundle-а;
-- `videos/slovo-privet-f17a6060.mp4` - короткий реальный MP4 sample для label `привет`.
+- `videos/` - real-video samples из `Slovo`.
+
+Текущий bundle содержит `9` проверяемых gestures:
+
+| sample_id | expected_label | upstream source |
+| --- | --- | --- |
+| `slovo_privet_f17a6060` | `привет` | public example video из `hukenovs/slovo` |
+| `slovo_poka_8ba230dc` | `пока` | trimmed dataset archive |
+| `slovo_da_2b1b2857` | `да` | trimmed dataset archive |
+| `slovo_horosho_43791c91` | `хорошо` | trimmed dataset archive |
+| `slovo_ploho_27560a7e` | `плохо` | trimmed dataset archive |
+| `slovo_utro_c1766b2e` | `утро` | trimmed dataset archive |
+| `slovo_ulica_908f133b` | `улица` | trimmed dataset archive |
+| `slovo_dom_524d6b8f` | `дом` | trimmed dataset archive |
+| `slovo_voda_90db4617` | `вода` | trimmed dataset archive |
+
+Из исходного базового списка удалось подтвердить `привет`, `пока`, `да`, `хорошо`, `плохо`. Для остальных нужных слов в выбранном legal source не нашлись те же labels, поэтому bundle дополнен разрешенными запасными словами `утро`, `улица`, `дом`, `вода`. Проверяемого десятого sample из согласованного списка пока нет.
 
 ## Правила использования
 
@@ -16,4 +32,16 @@
 - при замене или расширении bundle-а нужно обновить `manifest.json`, checksum и связанную документацию;
 - в репозиторий нельзя складывать большие видео, тяжелые датасеты, model dumps и artifact dumps; если bundle станет тяжелым, нужен внешний источник, checksum и инструкция размещения вместо прямого добавления больших файлов в Git.
 
-Подробное назначение, связь с `QA-03` и ограничения описаны в [docs/qa/live-sample-bundle.md](../../docs/qa/live-sample-bundle.md).
+## Быстрые проверки
+
+```bash
+python3 -m json.tool data/live_samples/manifest.json
+python3 scripts/run_live_e2e_smoke.py --base-url http://127.0.0.1:8000
+python3 scripts/run_live_e2e_smoke.py --base-url http://127.0.0.1:8000 --sample-id slovo_privet_f17a6060
+```
+
+`QA-04` не обучает новую модель. Bundle нужен, чтобы честно показать, какие gestures текущий active runtime/model setup распознает уже сейчас, а какие пока остаются data/model gap.
+
+Текущий полный live smoke на `2026-05-19` дал `1/9 passed`: подтвердился только `привет`; остальные восемь samples не дали committed event на текущем active runtime/model setup.
+
+Подробное назначение, source mapping, замены слов и smoke-ограничения описаны в [docs/qa/live-sample-bundle.md](../../docs/qa/live-sample-bundle.md).

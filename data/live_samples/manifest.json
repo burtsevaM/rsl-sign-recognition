@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
-  "bundle_id": "DATA-01-live-sample-bundle-v1",
-  "purpose": "portable_live_input_for_QA-03",
+  "bundle_id": "DATA-02-live-sample-bundle-v2",
+  "purpose": "portable_live_input_for_QA-04",
   "storage_mode": "tracked_in_repository",
   "bundle_root": "data/live_samples",
   "samples": [
@@ -29,9 +29,231 @@
       "byte_size": 3052259,
       "live_input": true,
       "limitations": [
-        "single-sample bundle; not a benchmark or production-quality proof",
-        "sample is intended for future manual/e2e smoke verification against the current active runtime",
-        "live recognition result still requires manual confirmation in the future QA-03 run"
+        "single sample result is not a benchmark or production-quality proof"
+      ]
+    },
+    {
+      "sample_id": "slovo_poka_8ba230dc",
+      "label": "пока",
+      "expected_label": "пока",
+      "source": {
+        "name": "Slovo Russian Sign Language Dataset trimmed video",
+        "origin": "hukenovs/slovo",
+        "upstream_repository": "https://github.com/hukenovs/slovo",
+        "upstream_path": "slovo.zip::train/8ba230dc-75c2-4964-8205-c780419c75d1.mp4",
+        "upstream_label": "Пока",
+        "license": "CC BY-SA 4.0",
+        "license_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+        "attribution": "Slovo Russian Sign Language Dataset and Models, hukenovs/slovo",
+        "modified": false,
+        "modification_notes": "content bytes unchanged from upstream trimmed dataset archive; only the repository-local filename differs"
+      },
+      "format": "video/mp4",
+      "frame_count": 48,
+      "duration_seconds": 1.6,
+      "fps": 30.0,
+      "local_path": "data/live_samples/videos/slovo-poka-8ba230dc.mp4",
+      "sha256": "16348a00ca847510753a7f33b089ccd24804690a597b3e1b38320ca879ce6692",
+      "byte_size": 344537,
+      "live_input": true,
+      "limitations": [
+        "upstream label uses capitalized spelling; expected_label stores the runtime-normalized lowercase form"
+      ]
+    },
+    {
+      "sample_id": "slovo_da_2b1b2857",
+      "label": "да",
+      "expected_label": "да",
+      "source": {
+        "name": "Slovo Russian Sign Language Dataset trimmed video",
+        "origin": "hukenovs/slovo",
+        "upstream_repository": "https://github.com/hukenovs/slovo",
+        "upstream_path": "slovo.zip::train/2b1b2857-02ca-4e0e-86dc-a525e075eb98.mp4",
+        "upstream_label": "да",
+        "license": "CC BY-SA 4.0",
+        "license_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+        "attribution": "Slovo Russian Sign Language Dataset and Models, hukenovs/slovo",
+        "modified": false,
+        "modification_notes": "content bytes unchanged from upstream trimmed dataset archive; only the repository-local filename differs"
+      },
+      "format": "video/mp4",
+      "frame_count": 30,
+      "duration_seconds": 1.0,
+      "fps": 30.0,
+      "local_path": "data/live_samples/videos/slovo-da-2b1b2857.mp4",
+      "sha256": "e2e3bebf464f31c51055b7bc562a6ad551c3755736e41054a83eeeb03b5ebb0b",
+      "byte_size": 179718,
+      "live_input": true,
+      "limitations": [
+        "gesture is outside the current active classifier label set"
+      ]
+    },
+    {
+      "sample_id": "slovo_horosho_43791c91",
+      "label": "хорошо",
+      "expected_label": "хорошо",
+      "source": {
+        "name": "Slovo Russian Sign Language Dataset trimmed video",
+        "origin": "hukenovs/slovo",
+        "upstream_repository": "https://github.com/hukenovs/slovo",
+        "upstream_path": "slovo.zip::train/43791c91-9bb8-42ed-a5cb-b421506d8550.mp4",
+        "upstream_label": "хорошо",
+        "license": "CC BY-SA 4.0",
+        "license_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+        "attribution": "Slovo Russian Sign Language Dataset and Models, hukenovs/slovo",
+        "modified": false,
+        "modification_notes": "content bytes unchanged from upstream trimmed dataset archive; only the repository-local filename differs"
+      },
+      "format": "video/mp4",
+      "frame_count": 34,
+      "duration_seconds": 1.133333,
+      "fps": 30.0,
+      "local_path": "data/live_samples/videos/slovo-horosho-43791c91.mp4",
+      "sha256": "d7eaeab7b80dcf238f891c1ad7264dc56016fd47a7553aab7a4780ef1981d242",
+      "byte_size": 246489,
+      "live_input": true,
+      "limitations": [
+        "gesture is outside the current active classifier label set"
+      ]
+    },
+    {
+      "sample_id": "slovo_ploho_27560a7e",
+      "label": "плохо",
+      "expected_label": "плохо",
+      "source": {
+        "name": "Slovo Russian Sign Language Dataset trimmed video",
+        "origin": "hukenovs/slovo",
+        "upstream_repository": "https://github.com/hukenovs/slovo",
+        "upstream_path": "slovo.zip::train/27560a7e-93ce-4bb1-9c52-02c37e5617ce.mp4",
+        "upstream_label": "Плохо",
+        "license": "CC BY-SA 4.0",
+        "license_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+        "attribution": "Slovo Russian Sign Language Dataset and Models, hukenovs/slovo",
+        "modified": false,
+        "modification_notes": "content bytes unchanged from upstream trimmed dataset archive; only the repository-local filename differs"
+      },
+      "format": "video/mp4",
+      "frame_count": 42,
+      "duration_seconds": 1.4,
+      "fps": 30.0,
+      "local_path": "data/live_samples/videos/slovo-ploho-27560a7e.mp4",
+      "sha256": "711c534f376a4ca79be3a6ac02186d4d5ae0b9c3d65d83bc3e6aa93fec92e08b",
+      "byte_size": 355626,
+      "live_input": true,
+      "limitations": [
+        "upstream label uses capitalized spelling; gesture is outside the current active classifier label set"
+      ]
+    },
+    {
+      "sample_id": "slovo_utro_c1766b2e",
+      "label": "утро",
+      "expected_label": "утро",
+      "source": {
+        "name": "Slovo Russian Sign Language Dataset trimmed video",
+        "origin": "hukenovs/slovo",
+        "upstream_repository": "https://github.com/hukenovs/slovo",
+        "upstream_path": "slovo.zip::test/c1766b2e-f548-42c2-9fa6-718f889324ca.mp4",
+        "upstream_label": "утро",
+        "license": "CC BY-SA 4.0",
+        "license_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+        "attribution": "Slovo Russian Sign Language Dataset and Models, hukenovs/slovo",
+        "modified": false,
+        "modification_notes": "content bytes unchanged from upstream trimmed dataset archive; only the repository-local filename differs"
+      },
+      "format": "video/mp4",
+      "frame_count": 27,
+      "duration_seconds": 0.9,
+      "fps": 30.0,
+      "local_path": "data/live_samples/videos/slovo-utro-c1766b2e.mp4",
+      "sha256": "d810273a745ea755f6e6d32c45b76d51333083fbfad4e0e7f269e9f5a4f74a7b",
+      "byte_size": 168726,
+      "live_input": true,
+      "limitations": [
+        "fallback gesture outside the current active classifier label set"
+      ]
+    },
+    {
+      "sample_id": "slovo_ulica_908f133b",
+      "label": "улица",
+      "expected_label": "улица",
+      "source": {
+        "name": "Slovo Russian Sign Language Dataset trimmed video",
+        "origin": "hukenovs/slovo",
+        "upstream_repository": "https://github.com/hukenovs/slovo",
+        "upstream_path": "slovo.zip::train/908f133b-6aeb-49fc-8d56-d3c9db391734.mp4",
+        "upstream_label": "улица",
+        "license": "CC BY-SA 4.0",
+        "license_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+        "attribution": "Slovo Russian Sign Language Dataset and Models, hukenovs/slovo",
+        "modified": false,
+        "modification_notes": "content bytes unchanged from upstream trimmed dataset archive; only the repository-local filename differs"
+      },
+      "format": "video/mp4",
+      "frame_count": 37,
+      "duration_seconds": 1.233333,
+      "fps": 30.0,
+      "local_path": "data/live_samples/videos/slovo-ulica-908f133b.mp4",
+      "sha256": "05257990773d767c00562f034b1aba8374fb3596865a0aa79d56479607142b85",
+      "byte_size": 259905,
+      "live_input": true,
+      "limitations": [
+        "fallback gesture outside the current active classifier label set"
+      ]
+    },
+    {
+      "sample_id": "slovo_dom_524d6b8f",
+      "label": "дом",
+      "expected_label": "дом",
+      "source": {
+        "name": "Slovo Russian Sign Language Dataset trimmed video",
+        "origin": "hukenovs/slovo",
+        "upstream_repository": "https://github.com/hukenovs/slovo",
+        "upstream_path": "slovo.zip::train/524d6b8f-c631-4d81-a4bb-9692fadde6c8.mp4",
+        "upstream_label": "дом",
+        "license": "CC BY-SA 4.0",
+        "license_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+        "attribution": "Slovo Russian Sign Language Dataset and Models, hukenovs/slovo",
+        "modified": false,
+        "modification_notes": "content bytes unchanged from upstream trimmed dataset archive; only the repository-local filename differs"
+      },
+      "format": "video/mp4",
+      "frame_count": 45,
+      "duration_seconds": 1.5,
+      "fps": 30.0,
+      "local_path": "data/live_samples/videos/slovo-dom-524d6b8f.mp4",
+      "sha256": "73871668c81a15e7bac28bdd1d0e24a4632d78e837120dc6e231258a501a80ec",
+      "byte_size": 317968,
+      "live_input": true,
+      "limitations": [
+        "fallback gesture outside the current active classifier label set"
+      ]
+    },
+    {
+      "sample_id": "slovo_voda_90db4617",
+      "label": "вода",
+      "expected_label": "вода",
+      "source": {
+        "name": "Slovo Russian Sign Language Dataset trimmed video",
+        "origin": "hukenovs/slovo",
+        "upstream_repository": "https://github.com/hukenovs/slovo",
+        "upstream_path": "slovo.zip::train/90db4617-5a96-41d4-9a56-39048956e8f2.mp4",
+        "upstream_label": "вода",
+        "license": "CC BY-SA 4.0",
+        "license_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+        "attribution": "Slovo Russian Sign Language Dataset and Models, hukenovs/slovo",
+        "modified": false,
+        "modification_notes": "content bytes unchanged from upstream trimmed dataset archive; only the repository-local filename differs"
+      },
+      "format": "video/mp4",
+      "frame_count": 44,
+      "duration_seconds": 1.466667,
+      "fps": 30.0,
+      "local_path": "data/live_samples/videos/slovo-voda-90db4617.mp4",
+      "sha256": "f940103e410bcab3b84e0a4bde1f869539e653e948142adba05a6d3e3edae159",
+      "byte_size": 268815,
+      "live_input": true,
+      "limitations": [
+        "fallback gesture outside the current active classifier label set"
       ]
     }
   ]

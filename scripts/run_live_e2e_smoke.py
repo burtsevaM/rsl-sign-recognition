@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Run the QA-03 live end-to-end recognition smoke through the backend."""
+"""Run the live end-to-end recognition smoke through the backend."""
 
 from __future__ import annotations
 
@@ -31,6 +31,21 @@ REQUIRED_RESULT_FIELDS = (
     "text_state",
     "timestamp_ms",
 )
+REQUIRED_SOURCE_FIELDS = (
+    "upstream_repository",
+    "license",
+    "license_url",
+    "attribution",
+    "modified",
+    "modification_notes",
+)
+REQUIRED_SAMPLE_FIELDS = (
+    "sample_id",
+    "expected_label",
+    "local_path",
+    "duration_seconds",
+    "fps",
+)
 
 
 class SmokeError(RuntimeError):
@@ -60,7 +75,7 @@ class SampleResult:
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         description=(
-            "Run a live QA-03 smoke through /health, /ready and WS /ws/stream "
+            "Run a live e2e smoke through /health, /ready and WS /ws/stream "
             "using repository live sample videos."
         )
     )
@@ -88,8 +103,8 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--max-samples",
         type=int,
-        default=5,
-        help="Maximum number of manifest samples to run when --sample-id is absent.",
+        default=0,
+        help="Optional sample cap when --sample-id is absent; 0 runs the full bundle.",
     )
     parser.add_argument(
         "--max-frames",
@@ -149,13 +164,7 @@ def load_samples(
     selected_ids = set(sample_ids or ())
     samples: list[SmokeSample] = []
     for raw_sample in raw_samples:
-        if not isinstance(raw_sample, dict):
-            continue
-        sample_id = raw_sample.get("sample_id")
-        expected_label = raw_sample.get("expected_label")
-        local_path = raw_sample.get("local_path")
-        if not all(isinstance(value, str) and value for value in (sample_id, expected_label, local_path)):
-            continue
+        sample_id, expected_label, local_path, fps = validate_manifest_sample(raw_sample)
         if selected_ids and sample_id not in selected_ids:
             continue
         sample_path = repo_relative_path(local_path)
@@ -168,14 +177,12 @@ def load_samples(
                 f"sample file is missing for {sample_id}: "
                 f"{display_path}"
             )
-        fps_value = raw_sample.get("fps")
-        fps = float(fps_value) if isinstance(fps_value, (int, float)) else None
         samples.append(
             SmokeSample(
                 sample_id=sample_id,
                 expected_label=expected_label,
                 local_path=sample_path,
-                fps=fps if fps and fps > 0 else None,
+                fps=fps,
             )
         )
 
@@ -187,11 +194,61 @@ def load_samples(
                 "sample ids were not found in the manifest: " + ", ".join(missing_ids)
             )
 
-    if max_samples < 1:
-        raise SmokeError("--max-samples must be a positive integer")
+    if max_samples < 0:
+        raise SmokeError("--max-samples must be zero or a positive integer")
     if not samples:
         raise SmokeError("no usable samples selected from the manifest")
-    return samples[:max_samples]
+    return samples if max_samples == 0 else samples[:max_samples]
+
+
+def validate_manifest_sample(raw_sample: object) -> tuple[str, str, str, float | None]:
+    if not isinstance(raw_sample, dict):
+        raise SmokeError("sample manifest contains a non-object sample entry")
+
+    missing_fields = [
+        field
+        for field in REQUIRED_SAMPLE_FIELDS
+        if field not in raw_sample
+    ]
+    if missing_fields:
+        raise SmokeError(
+            "sample manifest entry is missing required fields: "
+            + ", ".join(missing_fields)
+        )
+
+    sample_id = raw_sample["sample_id"]
+    expected_label = raw_sample["expected_label"]
+    local_path = raw_sample["local_path"]
+    duration_seconds = raw_sample["duration_seconds"]
+    fps_value = raw_sample["fps"]
+    if not all(isinstance(value, str) and value for value in (sample_id, expected_label, local_path)):
+        raise SmokeError("sample_id, expected_label and local_path must be non-empty strings")
+    if not isinstance(duration_seconds, (int, float)) or duration_seconds <= 0:
+        raise SmokeError(f"duration_seconds must be positive for {sample_id}")
+    if not isinstance(fps_value, (int, float)) or fps_value <= 0:
+        raise SmokeError(f"fps must be positive for {sample_id}")
+
+    source = raw_sample.get("source")
+    if not isinstance(source, dict):
+        raise SmokeError(f"source metadata is required for {sample_id}")
+    missing_source_fields = [
+        field
+        for field in REQUIRED_SOURCE_FIELDS
+        if field not in source
+    ]
+    if missing_source_fields:
+        raise SmokeError(
+            f"source metadata is incomplete for {sample_id}: "
+            + ", ".join(missing_source_fields)
+        )
+    for field in ("upstream_repository", "license", "license_url", "attribution", "modification_notes"):
+        value = source[field]
+        if not isinstance(value, str) or not value:
+            raise SmokeError(f"source.{field} must be a non-empty string for {sample_id}")
+    if not isinstance(source["modified"], bool):
+        raise SmokeError(f"source.modified must be boolean for {sample_id}")
+
+    return sample_id, expected_label, local_path, float(fps_value)
 
 
 def require_dependency(module_name: str, install_hint: str) -> Any:

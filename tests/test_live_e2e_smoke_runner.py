@@ -17,21 +17,35 @@ sys.modules[SPEC.name] = RUNNER
 SPEC.loader.exec_module(RUNNER)
 
 
-def write_manifest(tmp_path: Path) -> Path:
-    sample_path = tmp_path / "sample.mp4"
-    sample_path.write_bytes(b"video")
+def sample_entry(sample_path: Path, *, sample_id: str = "sample_01") -> dict[str, object]:
+    return {
+        "sample_id": sample_id,
+        "expected_label": "привет",
+        "local_path": str(sample_path),
+        "duration_seconds": 1.0,
+        "fps": 30.0,
+        "source": {
+            "upstream_repository": "https://example.test/source",
+            "license": "CC BY-SA 4.0",
+            "license_url": "https://example.test/license",
+            "attribution": "Example dataset",
+            "modified": False,
+            "modification_notes": "content bytes unchanged",
+        },
+    }
+
+
+def write_manifest(tmp_path: Path, *, sample_count: int = 1) -> Path:
+    samples: list[dict[str, object]] = []
+    for index in range(sample_count):
+        sample_path = tmp_path / f"sample-{index}.mp4"
+        sample_path.write_bytes(b"video")
+        samples.append(sample_entry(sample_path, sample_id=f"sample_{index + 1:02d}"))
     manifest_path = tmp_path / "manifest.json"
     manifest_path.write_text(
         json.dumps(
             {
-                "samples": [
-                    {
-                        "sample_id": "sample_01",
-                        "expected_label": "привет",
-                        "local_path": str(sample_path),
-                        "fps": 30.0,
-                    }
-                ]
+                "samples": samples
             },
             ensure_ascii=False,
         ),
@@ -44,13 +58,13 @@ def test_load_samples_selects_requested_sample(tmp_path: Path) -> None:
     samples = RUNNER.load_samples(
         write_manifest(tmp_path),
         sample_ids=["sample_01"],
-        max_samples=5,
+        max_samples=0,
     )
 
     assert len(samples) == 1
     assert samples[0].sample_id == "sample_01"
     assert samples[0].expected_label == "привет"
-    assert samples[0].local_path == (tmp_path / "sample.mp4").resolve()
+    assert samples[0].local_path == (tmp_path / "sample-0.mp4").resolve()
 
 
 def test_load_samples_reports_unknown_sample_id(tmp_path: Path) -> None:
@@ -58,7 +72,51 @@ def test_load_samples_reports_unknown_sample_id(tmp_path: Path) -> None:
         RUNNER.load_samples(
             write_manifest(tmp_path),
             sample_ids=["missing"],
-            max_samples=5,
+            max_samples=0,
+        )
+
+
+def test_load_samples_runs_full_bundle_when_max_samples_is_zero(tmp_path: Path) -> None:
+    samples = RUNNER.load_samples(
+        write_manifest(tmp_path, sample_count=3),
+        sample_ids=None,
+        max_samples=0,
+    )
+
+    assert [sample.sample_id for sample in samples] == [
+        "sample_01",
+        "sample_02",
+        "sample_03",
+    ]
+
+
+def test_load_samples_rejects_missing_source_metadata(tmp_path: Path) -> None:
+    sample_path = tmp_path / "sample.mp4"
+    sample_path.write_bytes(b"video")
+    manifest_path = tmp_path / "manifest.json"
+    manifest_path.write_text(
+        json.dumps(
+            {
+                "samples": [
+                    {
+                        "sample_id": "sample_01",
+                        "expected_label": "привет",
+                        "local_path": str(sample_path),
+                        "duration_seconds": 1.0,
+                        "fps": 30.0,
+                    }
+                ]
+            },
+            ensure_ascii=False,
+        ),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(RUNNER.SmokeError, match="source metadata is required"):
+        RUNNER.load_samples(
+            manifest_path,
+            sample_ids=None,
+            max_samples=0,
         )
 
 
@@ -106,6 +164,7 @@ def test_build_parser_exposes_sample_selection_and_timeout_flags() -> None:
     help_text = parser.format_help()
 
     assert "--sample-id" in help_text
+    assert "--max-samples" in help_text
     assert "--http-timeout-seconds" in help_text
 
 
