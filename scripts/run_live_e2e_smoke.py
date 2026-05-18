@@ -321,6 +321,15 @@ def validate_recognition_result(message: dict[str, object]) -> dict[str, object]
     return payload
 
 
+def sample_passed(
+    *,
+    expected_label: str,
+    actual_label: str | None,
+    committed: bool,
+) -> bool:
+    return committed and actual_label == expected_label
+
+
 async def run_sample(
     sample: SmokeSample,
     *,
@@ -374,7 +383,11 @@ async def run_sample(
             if frame_delay > 0:
                 await asyncio.sleep(frame_delay)
 
-    passed = committed and actual_label == sample.expected_label
+    passed = sample_passed(
+        expected_label=sample.expected_label,
+        actual_label=actual_label,
+        committed=committed,
+    )
     return SampleResult(
         sample_id=sample.sample_id,
         expected_label=sample.expected_label,

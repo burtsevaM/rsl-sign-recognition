@@ -149,6 +149,7 @@ def write_active_pack(
     skip_required: str | None = None,
     empty_labels: bool = False,
     files: dict[str, object] | None = None,
+    classifier_runtime_config: str | None = None,
     segmentation_runtime_config: str = '{"window_size": 64}',
 ) -> Path:
     manifest_path = active_manifest_path(tmp_path)
@@ -161,6 +162,10 @@ def write_active_pack(
         "classifier_labels": {
             "relative_path": "classifier/labels.txt",
             "required": True,
+        },
+        "classifier_config": {
+            "relative_path": "classifier/runtime_config.json",
+            "required": False,
         },
         "segmentation_model": {
             "relative_path": "segmentation/model.onnx",
@@ -178,6 +183,7 @@ def write_active_pack(
     required_files = {
         "classifier_model": "classifier/model.onnx",
         "classifier_labels": "classifier/labels.txt",
+        "classifier_config": "classifier/runtime_config.json",
         "segmentation_model": "segmentation/model.onnx",
         "segmentation_thresholds": "segmentation/thresholds.json",
         "segmentation_config": "segmentation/runtime_config.json",
@@ -190,7 +196,14 @@ def write_active_pack(
         if name == "classifier_labels":
             labels = "" if empty_labels else "_no_event\nпривет\nпока\n"
             artifact_path.write_text(labels, encoding="utf-8")
-        elif name.endswith("config"):
+        elif name == "classifier_config":
+            artifact_path.write_text(
+                classifier_runtime_config
+                if classifier_runtime_config is not None
+                else segmentation_runtime_config,
+                encoding="utf-8",
+            )
+        elif name == "segmentation_config":
             artifact_path.write_text(segmentation_runtime_config, encoding="utf-8")
         elif name == "segmentation_thresholds":
             artifact_path.write_text(
@@ -360,6 +373,55 @@ def test_live_pose_words_runtime_uses_active_pack_norm_flags(
     assert state.pipeline.pose_features.config.canonical_hands_3d is False
 
 
+def test_live_pose_words_runtime_defaults_missing_norm_flags_to_safe_true(
+    tmp_path: Path,
+) -> None:
+    write_active_pack(
+        tmp_path,
+        classifier_runtime_config='{"clip_frames": 32}',
+        segmentation_runtime_config='{"window_size": 64}',
+    )
+    service = LivePoseWordsRuntimeService.from_settings(
+        build_settings(tmp_path),
+        pipeline_factory=fake_pipeline_factory,
+    )
+
+    state = service.initialize()
+
+    assert state.pipeline is not None
+    assert state.pipeline.pose_features.config.apply_shoulder_norm is True
+    assert state.pipeline.pose_features.config.canonical_hands_3d is True
+
+
+def test_live_pose_words_runtime_rejects_conflicting_norm_flags(
+    tmp_path: Path,
+) -> None:
+    write_active_pack(
+        tmp_path,
+        classifier_runtime_config=(
+            '{"norm_flags": {"use_shoulder_norm": true, '
+            '"use_hands_3d_norm": true}}'
+        ),
+        segmentation_runtime_config=(
+            '{"window_size": 64, "norm_flags": '
+            '{"use_shoulder_norm": false, "use_hands_3d_norm": true}}'
+        ),
+    )
+    service = LivePoseWordsRuntimeService.from_settings(
+        build_settings(tmp_path),
+        pipeline_factory=fake_pipeline_factory,
+    )
+
+    state = service.initialize()
+
+    assert state.status is LivePoseWordsRuntimeStatus.INVALID
+    assert state.pipeline is None
+    assert "pose_words_runtime_config_invalid" in state.reason_codes
+    assert "exception:PoseWordsRuntimeAssemblyError" in state.reason_codes
+    assert "cause:ValueError" in state.reason_codes
+    assert "phase:runtime_config" in state.reason_codes
+
+
 def test_rt05_service_level_runtime_path_is_orchestrated_without_transport(
     tmp_path: Path,
 ) -> None:
@@ -442,6 +504,18 @@ def test_live_pose_words_runtime_flushes_active_segment_on_no_hand_boundary(
     assert flushed.status is PoseWordsRuntimeEventStatus.RESULT
     assert flushed.recognition is not None
     assert flushed.recognition.label == "привет"
+
+
+def test_live_pose_words_runtime_no_hand_boundary_without_active_segment_stays_no_result(
+    tmp_path: Path,
+) -> None:
+    session = create_session(tmp_path, pipeline_factory=fake_pipeline_factory)
+
+    no_hand = session.push_frame(np.zeros((2, 2, 3), dtype=np.uint8))
+
+    assert no_hand.status is PoseWordsRuntimeEventStatus.NO_RESULT
+    assert no_hand.reason_code == "pose_not_detected"
+    assert no_hand.recognition is None
 
 
 def test_live_pose_words_runtime_reports_unavailable_for_missing_manifest(

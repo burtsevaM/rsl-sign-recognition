@@ -27,13 +27,15 @@ python3 -m uvicorn rsl_sign_recognition.asgi:app --app-dir src
 
 ## Выбранные gestures и expected labels
 
-Текущий переносимый bundle содержит один честный live sample:
+Текущий переносимый tracked bundle содержит ровно один честный live sample:
 
 | sample_id | expected_label | input |
 | --- | --- | --- |
 | `slovo_privet_f17a6060` | `привет` | `data/live_samples/videos/slovo-privet-f17a6060.mp4` |
 
 Expected labels берутся из `data/live_samples/manifest.json`, а sample path остается repo-relative.
+
+Расширить smoke до `2-5` gestures в рамках текущего PR честно не получилось: в репозитории нет второго сопоставимо маленького, легально отслеживаемого и верифицированного real-video sample. Для label `пока` tracked source пока отсутствует; подменять его hidden local path, feature clip-ом или тяжелым dataset download нельзя.
 
 ## Как запускать smoke
 
@@ -63,6 +65,14 @@ Runner:
 
 Runner не вводит base64 fallback, новый handshake или отдельный final message type.
 
+### Manual GitHub Actions run
+
+Для повторяемой ручной проверки добавлен workflow `Live E2E Smoke` в `.github/workflows/live-e2e-smoke.yml`.
+
+Он запускается только вручную через `workflow_dispatch`, ставит live extras, поднимает backend, ждет `/health` и `/ready`, выполняет тот же runner и сохраняет backend/smoke logs как artifact `live-e2e-smoke-logs`.
+
+Обычный CI этим workflow не расширен: Foundation CI продолжает быстро проверять unit/contract/runtime tests, а реальный backend/WebSocket smoke запускается вручную, когда нужно перепроверить live contour перед merge или релизным решением.
+
 ## Что считается pass/fail
 
 `PASS`:
@@ -91,9 +101,9 @@ Runner не вводит base64 fallback, новый handshake или отдел
 python3 scripts/run_live_e2e_smoke.py --base-url http://127.0.0.1:8000
 ```
 
-| sample_id | expected | actual | result | confidence | committed |
-| --- | --- | --- | --- | --- | --- |
-| `slovo_privet_f17a6060` | `привет` | `привет` | `PASS` | `0.717108` | `true` |
+| sample_id | expected | actual | result | confidence | committed | frames |
+| --- | --- | --- | --- | --- | --- | --- |
+| `slovo_privet_f17a6060` | `привет` | `привет` | `PASS` | `0.717108` | `true` | `112` |
 
 Фактический summary runner-а:
 
@@ -131,7 +141,31 @@ summary: 1/1 passed
 
 ## Ограничения
 
-- Сейчас bundle содержит только один реальный gesture sample, поэтому QA-03 проверяет минимум `1` gesture, а не полноценный набор из `5`.
+- Сейчас tracked bundle содержит только один реальный gesture sample, поэтому QA-03 проверяет минимум `1` gesture, а не более уверенный набор из `2-5`.
 - Active artifact pack остается technical/runtime pack на synthetic validation artifacts, а не production-quality model proof.
 - Один smoke sample не является benchmark-ом, не измеряет качество на датасете и не заменяет production-grade evaluation.
 - Offline результаты `PW-06` полезны как контекст, но не заменяют live e2e confirmation через WebSocket.
+
+## Что проверяется автоматически и вручную
+
+Автоматически в обычном CI проверяются:
+
+- contract/runtime unit tests;
+- runner parsing/validation без поднятого backend;
+- segmentation/runtime regressions, включая boundary flush и consistency `norm_flags`.
+
+Вручную проверяется:
+
+- workflow `Live E2E Smoke` или локальный запуск runner-а против реального backend;
+- полный path `backend -> /health -> /ready -> WS /ws/stream -> binary JPEG frames -> recognition.result`.
+
+## Follow-up для расширения до 3-5 gestures
+
+Чтобы сделать smoke сильнее без нарушения требований QA-03, нужен отдельный маленький tracked bundle:
+
+1. добавить переносимые real-video samples минимум для `пока` и еще 1-3 active labels после их появления;
+2. зафиксировать для каждого sample источник, лицензию, checksum, frame count и repo-relative path;
+3. добавить expected labels в `data/live_samples/manifest.json`;
+4. прогнать manual `Live E2E Smoke` на всем bundle-е и честно сохранить `N/N` или `K/N` результат в report.
+
+До появления таких sample-артефактов расширение beyond `1` gesture остается data gap, а не скрытой недоделкой runner-а.

@@ -107,3 +107,25 @@ def test_build_parser_exposes_sample_selection_and_timeout_flags() -> None:
 
     assert "--sample-id" in help_text
     assert "--http-timeout-seconds" in help_text
+
+
+def test_sample_passed_requires_committed_result() -> None:
+    assert (
+        RUNNER.sample_passed(
+            expected_label="привет",
+            actual_label="привет",
+            committed=False,
+        )
+        is False
+    )
+
+
+def test_sample_passed_rejects_wrong_label() -> None:
+    assert (
+        RUNNER.sample_passed(
+            expected_label="привет",
+            actual_label="пока",
+            committed=True,
+        )
+        is False
+    )
