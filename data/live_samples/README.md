@@ -7,7 +7,7 @@
 - `manifest.json` - machine-readable metadata bundle-а;
 - `videos/` - real-video samples из `Slovo`.
 
-Текущий bundle содержит `9` проверяемых gestures:
+Текущий bundle содержит `10` проверяемых gestures:
 
 | sample_id | expected_label | upstream source |
 | --- | --- | --- |
@@ -20,8 +20,9 @@
 | `slovo_ulica_908f133b` | `улица` | trimmed dataset archive |
 | `slovo_dom_524d6b8f` | `дом` | trimmed dataset archive |
 | `slovo_voda_90db4617` | `вода` | trimmed dataset archive |
+| `slovo_rabotat_ffce2323` | `работать` | trimmed dataset archive |
 
-Из исходного базового списка удалось подтвердить `привет`, `пока`, `да`, `хорошо`, `плохо`. Для остальных нужных слов в выбранном legal source не нашлись те же labels, поэтому bundle дополнен разрешенными запасными словами `утро`, `улица`, `дом`, `вода`. Проверяемого десятого sample из согласованного списка пока нет.
+Из исходного базового списка удалось подтвердить `привет`, `пока`, `да`, `хорошо`, `плохо`. Для остальных нужных слов в выбранном legal source не нашлись те же labels, поэтому bundle дополнен разрешенными запасными словами `утро`, `улица`, `дом`, `вода`. Из запасного варианта `работа` в source подтвердился только отдельный upstream label `работать`; он добавлен как десятый sample без ручной подгонки label.
 
 ## Правила использования
 
@@ -42,6 +43,6 @@ python3 scripts/run_live_e2e_smoke.py --base-url http://127.0.0.1:8000 --sample-
 
 `QA-04` не обучает новую модель. Bundle нужен, чтобы честно показать, какие gestures текущий active runtime/model setup распознает уже сейчас, а какие пока остаются data/model gap.
 
-Текущий полный live smoke на `2026-05-19` дал `1/9 passed`: подтвердился только `привет`; остальные восемь samples не дали committed event на текущем active runtime/model setup.
+Текущий полный live smoke на `2026-05-19` дал `1/10 passed`: подтвердился только `привет`; остальные девять samples не дали committed event на текущем active runtime/model setup. До появления active classifier pack для demo dictionary из issue `#78` bundle остается data/QA increment, а не готовым закрытием `#76`.
 
 Подробное назначение, source mapping, замены слов и smoke-ограничения описаны в [docs/qa/live-sample-bundle.md](../../docs/qa/live-sample-bundle.md).

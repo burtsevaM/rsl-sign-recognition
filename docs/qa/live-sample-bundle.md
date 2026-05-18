@@ -12,7 +12,7 @@ Bundle нужен не для offline evaluation и не для доказате
 
 ## 2. Финальный набор gestures
 
-Текущий tracked bundle содержит `9` legal/portable real-video samples:
+Текущий tracked bundle содержит `10` legal/portable real-video samples:
 
 | sample_id | expected_label | source | frames / duration / fps | local path |
 | --- | --- | --- | --- | --- |
@@ -25,6 +25,7 @@ Bundle нужен не для offline evaluation и не для доказате
 | `slovo_ulica_908f133b` | `улица` | trimmed dataset archive | `37 / 1.233333 s / 30 fps` | `data/live_samples/videos/slovo-ulica-908f133b.mp4` |
 | `slovo_dom_524d6b8f` | `дом` | trimmed dataset archive | `45 / 1.500000 s / 30 fps` | `data/live_samples/videos/slovo-dom-524d6b8f.mp4` |
 | `slovo_voda_90db4617` | `вода` | trimmed dataset archive | `44 / 1.466667 s / 30 fps` | `data/live_samples/videos/slovo-voda-90db4617.mp4` |
+| `slovo_rabotat_ffce2323` | `работать` | trimmed dataset archive | `46 / 1.533333 s / 30 fps` | `data/live_samples/videos/slovo-rabotat-ffce2323.mp4` |
 
 Machine-readable metadata хранится в [data/live_samples/manifest.json](../../data/live_samples/manifest.json).
 
@@ -45,7 +46,7 @@ Machine-readable metadata хранится в [data/live_samples/manifest.json](
 - `дом`
 - `вода`
 
-Проверяемого десятого sample из согласованного списка пока нет: `работа`, `мама`, `папа` в выбранном source также не подтвердились как те же labels. Поэтому bundle честно останавливается на `9`, а не маскирует data gap фиктивным sample-ом.
+Из следующей группы запасных вариантов `мама` и `папа` в source также не подтвердились как те же labels, а вместо планового `работа` в Slovo есть отдельный реальный upstream label `работать`. Он добавлен как десятый sample без ручной нормализации в `работа`, чтобы bundle оставался честным к source metadata.
 
 ## 4. Источник данных и metadata
 
@@ -56,7 +57,7 @@ Machine-readable metadata хранится в [data/live_samples/manifest.json](
 - license URL: `https://creativecommons.org/licenses/by-sa/4.0/`;
 - attribution: `Slovo Russian Sign Language Dataset and Models, hukenovs/slovo`.
 
-`привет` сохранен из public example video, добавленного в `DATA-01`. Остальные восемь clips извлечены без изменения content bytes из trimmed dataset archive `slovo.zip`; у них изменено только repository-local имя файла. Для `Пока` и `Плохо` source metadata отдельно хранит оригинальное upstream spelling, а `expected_label` использует normalized lowercase форму, согласованную с runtime-facing labels.
+`привет` сохранен из public example video, добавленного в `DATA-01`. Остальные девять clips извлечены без изменения content bytes из trimmed dataset archive `slovo.zip`; у них изменено только repository-local имя файла. Для `Пока` и `Плохо` source metadata отдельно хранит оригинальное upstream spelling, а `expected_label` использует normalized lowercase форму, согласованную с runtime-facing labels. Для десятого sample source label `работать` сохранен буквально и не подменен плановым словом `работа`.
 
 Каждая запись manifest фиксирует:
 
@@ -91,6 +92,7 @@ data/live_samples/
     slovo-ulica-908f133b.mp4
     slovo-dom-524d6b8f.mp4
     slovo-voda-90db4617.mp4
+    slovo-rabotat-ffce2323.mp4
 ```
 
 Быстрая проверка manifest:
@@ -152,8 +154,9 @@ python3.11 scripts/run_live_e2e_smoke.py --base-url http://127.0.0.1:8000
 | `slovo_ulica_908f133b` | `улица` | `-` | `FAIL` | `-` | `false` |
 | `slovo_dom_524d6b8f` | `дом` | `-` | `FAIL` | `-` | `false` |
 | `slovo_voda_90db4617` | `вода` | `-` | `FAIL` | `-` | `false` |
+| `slovo_rabotat_ffce2323` | `работать` | `-` | `FAIL` | `-` | `false` |
 
-Итог: `1/9 passed`.
+Итог: `1/10 passed`.
 
 Отдельный single-sample прогон:
 
@@ -165,7 +168,7 @@ python3.11 scripts/run_live_e2e_smoke.py \
 
 Итог single-sample run: `1/1 passed`.
 
-Фактический результат ниже merge-oriented ориентира `8/10`, поэтому текущий increment нужно трактовать как data investigation: bundle, metadata, runner и документация готовы, но current active runtime/model setup пока не подтверждает demo dictionary beyond `привет`.
+Фактический результат ниже merge-oriented ориентира `8/10`, поэтому текущий increment нужно трактовать как data investigation: bundle, metadata, runner и документация готовы, но current active runtime/model setup пока не подтверждает demo dictionary beyond `привет`. Полноценное закрытие `#76` остается заблокированным issue `#78`, где должен появиться совместимый active classifier pack для demo dictionary.
 
 ## 8. Что не считается валидной заменой
 
@@ -180,7 +183,7 @@ python3.11 scripts/run_live_e2e_smoke.py \
 
 ## 9. Ограничения
 
-- Bundle пока содержит `9`, а не `10` legal samples из согласованного словаря.
+- Bundle содержит `10` legal samples, но десятый жест использует подтвержденный upstream label `работать`, потому что плановый label `работа` в выбранном source отсутствует.
 - Текущий active model setup остается моделью с двумя word labels, а не новым обученным demo dictionary.
 - Один live smoke не является benchmark-ом и не заменяет dataset-level evaluation.
-- Расширение набора данных и расширение словаря модели теперь разделены честно: первое сделано здесь, второе требует отдельных задач.
+- Расширение набора данных и расширение словаря модели теперь разделены честно: первое сделано здесь, второе требует отдельной model issue `#78`.

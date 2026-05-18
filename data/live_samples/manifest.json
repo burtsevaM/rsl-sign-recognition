@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "bundle_id": "DATA-02-live-sample-bundle-v2",
+  "bundle_id": "DATA-02-live-sample-bundle-v3",
   "purpose": "portable_live_input_for_QA-04",
   "storage_mode": "tracked_in_repository",
   "bundle_root": "data/live_samples",
@@ -254,6 +254,35 @@
       "live_input": true,
       "limitations": [
         "fallback gesture outside the current active classifier label set"
+      ]
+    },
+    {
+      "sample_id": "slovo_rabotat_ffce2323",
+      "label": "работать",
+      "expected_label": "работать",
+      "source": {
+        "name": "Slovo Russian Sign Language Dataset trimmed video",
+        "origin": "hukenovs/slovo",
+        "upstream_repository": "https://github.com/hukenovs/slovo",
+        "upstream_path": "slovo.zip::train/ffce2323-7036-46ee-af8a-82f010ce9aff.mp4",
+        "upstream_label": "работать",
+        "license": "CC BY-SA 4.0",
+        "license_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+        "attribution": "Slovo Russian Sign Language Dataset and Models, hukenovs/slovo",
+        "modified": false,
+        "modification_notes": "content bytes unchanged from upstream trimmed dataset archive; only the repository-local filename differs"
+      },
+      "format": "video/mp4",
+      "frame_count": 46,
+      "duration_seconds": 1.533333,
+      "fps": 30.0,
+      "local_path": "data/live_samples/videos/slovo-rabotat-ffce2323.mp4",
+      "sha256": "c79a12c0ac203c61d013255eaf7b940bfeb6ba3dec1ac68d8620b3455d725301",
+      "byte_size": 282118,
+      "live_input": true,
+      "limitations": [
+        "confirmed upstream label is работать; planned fallback работа is absent in the selected source",
+        "fallback gesture is outside the current active classifier label set"
       ]
     }
   ]
