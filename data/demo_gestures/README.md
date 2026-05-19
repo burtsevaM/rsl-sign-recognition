@@ -90,19 +90,17 @@ scripts/materialize_demo_gestures_dataset.py
 Рекомендуемый запуск через env:
 
 ```bash
-export SLOVO_DATA_ROOT="/Users/mariaburtseva/Documents/проект грант/mvp1/SuperLuchito--SimpleGesture2Letter-Model-Version-2/backend/data/slovo"
+export SLOVO_DATA_ROOT="/Users/luchito/Desktop/rsl-work/rsl-sign-recognition/data/slovo"
 python3 scripts/materialize_demo_gestures_dataset.py --slovo-root "$SLOVO_DATA_ROOT"
 ```
 
-Вариант с локальным symlink, если так удобнее для повторных запусков:
+Если `data/slovo/slovo.zip` уже скачан в этот repository, `--slovo-root` можно не передавать:
 
 ```bash
-mkdir -p data/raw
-ln -s "/Users/mariaburtseva/Documents/проект грант/mvp1/SuperLuchito--SimpleGesture2Letter-Model-Version-2/backend/data/slovo" data/raw/slovo
-python3 scripts/materialize_demo_gestures_dataset.py --slovo-root data/raw/slovo
+python3 scripts/materialize_demo_gestures_dataset.py
 ```
 
-`data/raw/` находится в `.gitignore`; symlink и heavy dataset files не должны попадать в commit.
+`data/slovo/` находится в `.gitignore`; heavy dataset files не должны попадать в commit.
 
 Output manifest:
 

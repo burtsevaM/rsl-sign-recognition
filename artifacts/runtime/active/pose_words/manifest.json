@@ -6,25 +6,32 @@
   "profile_origin": "runtime",
   "readiness_class": "live_candidate",
   "source_pipeline": "pose_words",
-  "generated_by": "ART-03 clean active artifact pack",
-  "dataset_kind": "synthetic_fixture",
+  "generated_by": "scripts/train_demo_gestures_classifier.py",
+  "dataset_kind": "slovo_demo_gestures_v1",
   "trained": true,
-  "source_draft_repo": "https://github.com/burtsevaM/gesture-recognition-draft",
-  "source_draft_branch": "burtseva_ma_mvp_words",
-  "source_profile_id": "validation_active",
-  "source_draft_paths": {
-    "classifier_model": "backend/artifacts/runtime/active/pose_words/pose_word_model.onnx",
-    "classifier_labels": "backend/artifacts/runtime/active/pose_words/pose_word_labels.txt",
-    "classifier_config": "backend/artifacts/runtime/active/pose_words/pose_word_config.json",
-    "segmentation_model": "backend/artifacts/runtime/active/pose_words/bio_segmenter.onnx",
-    "segmentation_thresholds": "backend/artifacts/runtime/active/pose_words/bio_thresholds.json",
-    "segmentation_config": "backend/artifacts/runtime/active/pose_words/bio_config.json",
-    "active_manifest": "backend/artifacts/runtime/active/pose_words/pose_words_active_manifest.json"
-  },
+  "labels": [
+    "_no_event",
+    "привет",
+    "пока",
+    "да",
+    "хорошо",
+    "плохо",
+    "утро",
+    "улица",
+    "дом",
+    "вода",
+    "работать"
+  ],
+  "task_codes": [
+    "MODEL-01",
+    "PW-07"
+  ],
+  "training_config": "configs/demo_gestures_classifier.json",
+  "training_report": "docs/model/model-01-demo-gestures-classifier-results.json",
   "notes": [
-    "Minimal technical/runtime pack prepared for clean ART-03 readiness checks.",
-    "Artifacts come from the draft validation_active profile based on synthetic fixtures.",
-    "This pack is not a production-quality proof and does not wire live WebSocket inference."
+    "Active classifier labels cover 10 demo gestures plus _no_event.",
+    "Classifier was trained on materialized Slovo train split and validated on held-out materialized validation split.",
+    "Segmentation artifact is a deterministic isolated-gesture segmenter for the current one-gesture live smoke clips."
   ],
   "files": {
     "classifier_model": {
@@ -33,9 +40,8 @@
       "artifact_kind": "model",
       "required": true,
       "trained": true,
-      "source_artifact_kind": "validation",
-      "size_bytes": 152107,
-      "sha256": "2fb75a51ef239bc3bd9e67ad3464505e5bab6ded418d881502f192df9efbfb08"
+      "size_bytes": 25855,
+      "sha256": "cc09bdba1bc29666a2f09992c24c736b7cc832e56e2be767f018b013c95a4e2a"
     },
     "classifier_labels": {
       "relative_path": "classifier/labels.txt",
@@ -43,9 +49,8 @@
       "artifact_kind": "labels",
       "required": true,
       "trained": true,
-      "source_artifact_kind": "validation",
-      "size_bytes": 32,
-      "sha256": "3d0156ddc2daf0c9db125ecee64b40b4a5ddf4b50746c9a4f53a13132b4b5261"
+      "size_bytes": 114,
+      "sha256": "4a396fadf60f00e6f58ad7a3dafa49ae05fc1c93e039dec12b2cce59df76635f"
     },
     "classifier_config": {
       "relative_path": "classifier/runtime_config.json",
@@ -53,35 +58,35 @@
       "artifact_kind": "runtime_config",
       "required": false,
       "trained": true,
-      "source_artifact_kind": "validation"
+      "size_bytes": 929,
+      "sha256": "3d7413035aed77f5b7dc04fc2bd0657b406f67e7cd0925c5beb86c7bad22dbbe"
     },
     "segmentation_model": {
       "relative_path": "segmentation/model.onnx",
       "component": "bio_segmentation",
       "artifact_kind": "model",
       "required": true,
-      "trained": true,
-      "source_artifact_kind": "validation",
-      "size_bytes": 94478,
-      "sha256": "dbca57fb559a70c64b520e1dbfca283305a0c0ea1ca3d1a844a5129d6f1582f2"
+      "trained": false,
+      "size_bytes": 815,
+      "sha256": "2d79af54e10ae38c158a7ace3a83effce0e311b5a9ca8e75a96050ff517a1c4b"
     },
     "segmentation_thresholds": {
       "relative_path": "segmentation/thresholds.json",
       "component": "bio_segmentation",
       "artifact_kind": "thresholds",
       "required": true,
-      "trained": true,
-      "source_artifact_kind": "validation",
-      "size_bytes": 1379,
-      "sha256": "c432e98c26ef7e22cb12522887fb87d7e06a313a58ec8e098004f1ae2ae9adc1"
+      "trained": false,
+      "size_bytes": 382,
+      "sha256": "ea5bd4b3b3386b0666ca9e58442a37da4760ac9de142bfd37f8a92abedf17cf0"
     },
     "segmentation_config": {
       "relative_path": "segmentation/runtime_config.json",
       "component": "bio_segmentation",
       "artifact_kind": "runtime_config",
       "required": false,
-      "trained": true,
-      "source_artifact_kind": "validation"
+      "trained": false,
+      "size_bytes": 652,
+      "sha256": "cfdf592e15b562f8dc23c7a69a2c730f4b9bb9ca233fce4ef965b67cb96eafeb"
     }
   }
 }

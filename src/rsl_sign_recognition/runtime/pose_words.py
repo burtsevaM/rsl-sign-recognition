@@ -677,20 +677,25 @@ class PoseWordsLiveSession:
         feature_index: int,
         hand_present: bool | None,
     ) -> PoseWordsRuntimeEvent:
-        if not self.pipeline.segmenter.has_enough_frames:
-            return self._no_result(
-                "insufficient_buffer",
-                feature_index=feature_index,
-                hand_present=hand_present,
-            )
         if not bool(segmentation.ran_inference):
+            reason = (
+                "insufficient_buffer"
+                if not self.pipeline.segmenter.has_enough_frames
+                else "segmentation_pending"
+            )
             return self._no_result(
-                "segmentation_pending",
+                reason,
                 feature_index=feature_index,
                 hand_present=hand_present,
             )
 
         segments = list(segmentation.sign_segments or segmentation.phrase_segments)
+        if not segments and not self.pipeline.segmenter.has_enough_frames:
+            return self._no_result(
+                "insufficient_buffer",
+                feature_index=feature_index,
+                hand_present=hand_present,
+            )
         if not segments:
             reason = (
                 "no_completed_segment"

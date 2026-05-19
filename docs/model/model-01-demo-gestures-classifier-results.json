@@ -1,0 +1,1058 @@
+{
+  "schema_version": 1,
+  "report_id": "MODEL-01-PW-07-demo-gestures-classifier-results-v1",
+  "generated_at_unix": 1779190821.675232,
+  "duration_seconds": 1.01,
+  "training_command": "python3 scripts/train_demo_gestures_classifier.py --config configs/demo_gestures_classifier.json --slovo-root data/slovo",
+  "config_path": "configs/demo_gestures_classifier.json",
+  "materialized_manifest": "data/demo_gestures/materialized_manifest.json",
+  "source_manifest": "data/demo_gestures/manifest.json",
+  "source_archive": "/Users/luchito/Desktop/rsl-work/rsl-sign-recognition/data/slovo/slovo.zip",
+  "label_set": [
+    "_no_event",
+    "привет",
+    "пока",
+    "да",
+    "хорошо",
+    "плохо",
+    "утро",
+    "улица",
+    "дом",
+    "вода",
+    "работать"
+  ],
+  "canonical_label_handling": {
+    "aliases": {
+      "привет!": "привет",
+      "no_event": "_no_event"
+    },
+    "source_labels_preserved": true
+  },
+  "class_counts": {
+    "_no_event": {
+      "train": 10,
+      "validation": 4,
+      "total": 14
+    },
+    "привет": {
+      "train": 14,
+      "validation": 5,
+      "total": 19
+    },
+    "пока": {
+      "train": 14,
+      "validation": 5,
+      "total": 19
+    },
+    "да": {
+      "train": 14,
+      "validation": 5,
+      "total": 19
+    },
+    "хорошо": {
+      "train": 14,
+      "validation": 5,
+      "total": 19
+    },
+    "плохо": {
+      "train": 14,
+      "validation": 5,
+      "total": 19
+    },
+    "утро": {
+      "train": 15,
+      "validation": 4,
+      "total": 19
+    },
+    "улица": {
+      "train": 14,
+      "validation": 5,
+      "total": 19
+    },
+    "дом": {
+      "train": 14,
+      "validation": 5,
+      "total": 19
+    },
+    "вода": {
+      "train": 14,
+      "validation": 5,
+      "total": 19
+    },
+    "работать": {
+      "train": 14,
+      "validation": 5,
+      "total": 19
+    }
+  },
+  "source_check": {
+    "archive": "/Users/luchito/Desktop/rsl-work/rsl-sign-recognition/data/slovo/slovo.zip",
+    "checked_samples": 204
+  },
+  "feature_extraction": {
+    "config": {
+      "clip_frames": 32,
+      "feature_dim": 159,
+      "segment_window": 20,
+      "segment_step": 4,
+      "min_feature_frames": 6,
+      "model_complexity": 1,
+      "min_detection_confidence": 0.35,
+      "min_tracking_confidence": 0.35,
+      "apply_shoulder_norm": true,
+      "hide_legs_before_body": true,
+      "canonical_hands_3d": true,
+      "gesture_requires_hand": true
+    },
+    "summary": {
+      "_no_event": {
+        "samples": 14,
+        "min_feature_frames": 32,
+        "avg_feature_frames": 49.0,
+        "cache_hits": 14
+      },
+      "привет": {
+        "samples": 19,
+        "min_feature_frames": 21,
+        "avg_feature_frames": 45.895,
+        "cache_hits": 19
+      },
+      "пока": {
+        "samples": 19,
+        "min_feature_frames": 29,
+        "avg_feature_frames": 40.053,
+        "cache_hits": 19
+      },
+      "да": {
+        "samples": 19,
+        "min_feature_frames": 13,
+        "avg_feature_frames": 33.211,
+        "cache_hits": 19
+      },
+      "хорошо": {
+        "samples": 19,
+        "min_feature_frames": 16,
+        "avg_feature_frames": 37.526,
+        "cache_hits": 19
+      },
+      "плохо": {
+        "samples": 19,
+        "min_feature_frames": 22,
+        "avg_feature_frames": 39.737,
+        "cache_hits": 19
+      },
+      "утро": {
+        "samples": 19,
+        "min_feature_frames": 27,
+        "avg_feature_frames": 41.0,
+        "cache_hits": 19
+      },
+      "улица": {
+        "samples": 19,
+        "min_feature_frames": 34,
+        "avg_feature_frames": 44.263,
+        "cache_hits": 19
+      },
+      "дом": {
+        "samples": 19,
+        "min_feature_frames": 2,
+        "avg_feature_frames": 31.105,
+        "cache_hits": 19
+      },
+      "вода": {
+        "samples": 19,
+        "min_feature_frames": 25,
+        "avg_feature_frames": 38.737,
+        "cache_hits": 19
+      },
+      "работать": {
+        "samples": 19,
+        "min_feature_frames": 0,
+        "avg_feature_frames": 40.579,
+        "cache_hits": 19
+      }
+    },
+    "failures": [],
+    "rejected_samples": [
+      {
+        "sample_id": "slovo_dom_5ba073a9",
+        "label": "дом",
+        "split": "validation",
+        "feature_frames": 2,
+        "reason": "too_few_feature_frames"
+      },
+      {
+        "sample_id": "slovo_rabotat_24c6530e",
+        "label": "работать",
+        "split": "train",
+        "feature_frames": 0,
+        "reason": "too_few_feature_frames"
+      },
+      {
+        "sample_id": "slovo_rabotat_3f59dd19",
+        "label": "работать",
+        "split": "train",
+        "feature_frames": 4,
+        "reason": "too_few_feature_frames"
+      }
+    ]
+  },
+  "model": {
+    "type": "standardized_linear_ridge_classifier",
+    "feature_projection": "temporal_summary_mean_std_delta",
+    "ridge_alpha": 1.0,
+    "logit_scale": 6.0,
+    "clip_frames": 32,
+    "feature_dim": 159,
+    "model_input_dim": 477
+  },
+  "train_metrics": {
+    "sample_count": 447,
+    "correct": 447,
+    "accuracy": 1.0,
+    "classes": [
+      {
+        "label": "_no_event",
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "support": 30
+      },
+      {
+        "label": "привет",
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "support": 42
+      },
+      {
+        "label": "пока",
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "support": 42
+      },
+      {
+        "label": "да",
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "support": 42
+      },
+      {
+        "label": "хорошо",
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "support": 42
+      },
+      {
+        "label": "плохо",
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "support": 42
+      },
+      {
+        "label": "утро",
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "support": 45
+      },
+      {
+        "label": "улица",
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "support": 42
+      },
+      {
+        "label": "дом",
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "support": 42
+      },
+      {
+        "label": "вода",
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "support": 42
+      },
+      {
+        "label": "работать",
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "support": 36
+      }
+    ],
+    "weak_classes": [],
+    "failed_cases": [],
+    "confusion_matrix": [
+      [
+        30,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        42,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        42,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        42,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        42,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        42,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        45,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        42,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        42,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        42,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        36
+      ]
+    ]
+  },
+  "validation_metrics": {
+    "sample_count": 52,
+    "correct": 34,
+    "accuracy": 0.653846,
+    "classes": [
+      {
+        "label": "_no_event",
+        "precision": 0.571429,
+        "recall": 1.0,
+        "f1": 0.727273,
+        "support": 4
+      },
+      {
+        "label": "привет",
+        "precision": 0.2,
+        "recall": 0.2,
+        "f1": 0.2,
+        "support": 5
+      },
+      {
+        "label": "пока",
+        "precision": 0.666667,
+        "recall": 0.8,
+        "f1": 0.727273,
+        "support": 5
+      },
+      {
+        "label": "да",
+        "precision": 0.666667,
+        "recall": 0.4,
+        "f1": 0.5,
+        "support": 5
+      },
+      {
+        "label": "хорошо",
+        "precision": 1.0,
+        "recall": 0.4,
+        "f1": 0.571429,
+        "support": 5
+      },
+      {
+        "label": "плохо",
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "support": 5
+      },
+      {
+        "label": "утро",
+        "precision": 0.4,
+        "recall": 0.5,
+        "f1": 0.444444,
+        "support": 4
+      },
+      {
+        "label": "улица",
+        "precision": 0.666667,
+        "recall": 0.8,
+        "f1": 0.727273,
+        "support": 5
+      },
+      {
+        "label": "дом",
+        "precision": 1.0,
+        "recall": 0.75,
+        "f1": 0.857143,
+        "support": 4
+      },
+      {
+        "label": "вода",
+        "precision": 0.6,
+        "recall": 0.6,
+        "f1": 0.6,
+        "support": 5
+      },
+      {
+        "label": "работать",
+        "precision": 0.8,
+        "recall": 0.8,
+        "f1": 0.8,
+        "support": 5
+      }
+    ],
+    "weak_classes": [
+      "_no_event",
+      "привет",
+      "пока",
+      "да",
+      "хорошо",
+      "утро",
+      "улица",
+      "дом",
+      "вода",
+      "работать"
+    ],
+    "failed_cases": [
+      {
+        "sample_id": "slovo_privet_0a4da017",
+        "split": "validation",
+        "window_kind": "prefix",
+        "expected_label": "привет",
+        "predicted_label": "утро",
+        "confidence": 0.380141
+      },
+      {
+        "sample_id": "slovo_privet_114b7380",
+        "split": "validation",
+        "window_kind": "prefix",
+        "expected_label": "привет",
+        "predicted_label": "пока",
+        "confidence": 0.507
+      },
+      {
+        "sample_id": "slovo_privet_5a954f84",
+        "split": "validation",
+        "window_kind": "prefix",
+        "expected_label": "привет",
+        "predicted_label": "утро",
+        "confidence": 0.875232
+      },
+      {
+        "sample_id": "slovo_privet_fb3ec88e",
+        "split": "validation",
+        "window_kind": "prefix",
+        "expected_label": "привет",
+        "predicted_label": "_no_event",
+        "confidence": 0.698838
+      },
+      {
+        "sample_id": "slovo_poka_6530c126",
+        "split": "validation",
+        "window_kind": "prefix",
+        "expected_label": "пока",
+        "predicted_label": "вода",
+        "confidence": 0.950474
+      },
+      {
+        "sample_id": "slovo_da_60ec20bb",
+        "split": "validation",
+        "window_kind": "prefix",
+        "expected_label": "да",
+        "predicted_label": "привет",
+        "confidence": 0.402595
+      },
+      {
+        "sample_id": "slovo_da_6fd72124",
+        "split": "validation",
+        "window_kind": "prefix",
+        "expected_label": "да",
+        "predicted_label": "привет",
+        "confidence": 0.838434
+      },
+      {
+        "sample_id": "slovo_da_e1651e4b",
+        "split": "validation",
+        "window_kind": "prefix",
+        "expected_label": "да",
+        "predicted_label": "работать",
+        "confidence": 0.828528
+      },
+      {
+        "sample_id": "slovo_horosho_170db63a",
+        "split": "validation",
+        "window_kind": "prefix",
+        "expected_label": "хорошо",
+        "predicted_label": "улица",
+        "confidence": 0.56691
+      },
+      {
+        "sample_id": "slovo_horosho_5c77dd00",
+        "split": "validation",
+        "window_kind": "prefix",
+        "expected_label": "хорошо",
+        "predicted_label": "привет",
+        "confidence": 0.844605
+      },
+      {
+        "sample_id": "slovo_horosho_fecaec6d",
+        "split": "validation",
+        "window_kind": "prefix",
+        "expected_label": "хорошо",
+        "predicted_label": "_no_event",
+        "confidence": 0.610432
+      },
+      {
+        "sample_id": "slovo_utro_d6d44d8f",
+        "split": "validation",
+        "window_kind": "prefix",
+        "expected_label": "утро",
+        "predicted_label": "_no_event",
+        "confidence": 0.462472
+      },
+      {
+        "sample_id": "slovo_utro_f675502f",
+        "split": "validation",
+        "window_kind": "prefix",
+        "expected_label": "утро",
+        "predicted_label": "вода",
+        "confidence": 0.500658
+      },
+      {
+        "sample_id": "slovo_ulica_a6c319ec",
+        "split": "validation",
+        "window_kind": "prefix",
+        "expected_label": "улица",
+        "predicted_label": "утро",
+        "confidence": 0.954151
+      },
+      {
+        "sample_id": "slovo_dom_124d90be",
+        "split": "validation",
+        "window_kind": "prefix",
+        "expected_label": "дом",
+        "predicted_label": "улица",
+        "confidence": 0.383072
+      },
+      {
+        "sample_id": "slovo_voda_41877695",
+        "split": "validation",
+        "window_kind": "prefix",
+        "expected_label": "вода",
+        "predicted_label": "пока",
+        "confidence": 0.905539
+      },
+      {
+        "sample_id": "slovo_voda_d11cad4b",
+        "split": "validation",
+        "window_kind": "prefix",
+        "expected_label": "вода",
+        "predicted_label": "привет",
+        "confidence": 0.637154
+      },
+      {
+        "sample_id": "slovo_rabotat_50b956c5",
+        "split": "validation",
+        "window_kind": "prefix",
+        "expected_label": "работать",
+        "predicted_label": "да",
+        "confidence": 0.879194
+      }
+    ],
+    "confusion_matrix": [
+      [
+        4,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        1,
+        1,
+        1,
+        0,
+        0,
+        0,
+        2,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        4,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0
+      ],
+      [
+        0,
+        2,
+        0,
+        2,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        1
+      ],
+      [
+        1,
+        1,
+        0,
+        0,
+        2,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        5,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        1,
+        0,
+        0,
+        0,
+        0,
+        0,
+        2,
+        0,
+        0,
+        1,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        1,
+        4,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        1,
+        3,
+        0,
+        0
+      ],
+      [
+        0,
+        1,
+        1,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        3,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        4
+      ]
+    ]
+  },
+  "dataset_shortages": [
+    {
+      "label": "привет",
+      "split": "train",
+      "target": 15,
+      "materialized": 14,
+      "missing": 1
+    },
+    {
+      "label": "пока",
+      "split": "train",
+      "target": 15,
+      "materialized": 14,
+      "missing": 1
+    },
+    {
+      "label": "да",
+      "split": "train",
+      "target": 15,
+      "materialized": 14,
+      "missing": 1
+    },
+    {
+      "label": "хорошо",
+      "split": "train",
+      "target": 15,
+      "materialized": 14,
+      "missing": 1
+    },
+    {
+      "label": "плохо",
+      "split": "train",
+      "target": 15,
+      "materialized": 14,
+      "missing": 1
+    },
+    {
+      "label": "утро",
+      "split": "validation",
+      "target": 5,
+      "materialized": 4,
+      "missing": 1
+    },
+    {
+      "label": "улица",
+      "split": "train",
+      "target": 15,
+      "materialized": 14,
+      "missing": 1
+    },
+    {
+      "label": "дом",
+      "split": "train",
+      "target": 15,
+      "materialized": 14,
+      "missing": 1
+    },
+    {
+      "label": "вода",
+      "split": "train",
+      "target": 15,
+      "materialized": 14,
+      "missing": 1
+    },
+    {
+      "label": "работать",
+      "split": "train",
+      "target": 15,
+      "materialized": 14,
+      "missing": 1
+    }
+  ],
+  "class_status": {
+    "привет": {
+      "target_train": 15,
+      "target_validation": 5,
+      "materialized_train": 14,
+      "materialized_validation": 5,
+      "status": "shortage",
+      "shortage_train": 1,
+      "shortage_validation": 0,
+      "notes": "Usable train and validation records exist, but materialized counts are below target after exclusions."
+    },
+    "пока": {
+      "target_train": 15,
+      "target_validation": 5,
+      "materialized_train": 14,
+      "materialized_validation": 5,
+      "status": "shortage",
+      "shortage_train": 1,
+      "shortage_validation": 0,
+      "notes": "Usable train and validation records exist, but materialized counts are below target after exclusions."
+    },
+    "да": {
+      "target_train": 15,
+      "target_validation": 5,
+      "materialized_train": 14,
+      "materialized_validation": 5,
+      "status": "shortage",
+      "shortage_train": 1,
+      "shortage_validation": 0,
+      "notes": "Usable train and validation records exist, but materialized counts are below target after exclusions."
+    },
+    "хорошо": {
+      "target_train": 15,
+      "target_validation": 5,
+      "materialized_train": 14,
+      "materialized_validation": 5,
+      "status": "shortage",
+      "shortage_train": 1,
+      "shortage_validation": 0,
+      "notes": "Usable train and validation records exist, but materialized counts are below target after exclusions."
+    },
+    "плохо": {
+      "target_train": 15,
+      "target_validation": 5,
+      "materialized_train": 14,
+      "materialized_validation": 5,
+      "status": "shortage",
+      "shortage_train": 1,
+      "shortage_validation": 0,
+      "notes": "Usable train and validation records exist, but materialized counts are below target after exclusions."
+    },
+    "утро": {
+      "target_train": 15,
+      "target_validation": 5,
+      "materialized_train": 15,
+      "materialized_validation": 4,
+      "status": "shortage",
+      "shortage_train": 0,
+      "shortage_validation": 1,
+      "notes": "Usable train and validation records exist, but materialized counts are below target after exclusions."
+    },
+    "улица": {
+      "target_train": 15,
+      "target_validation": 5,
+      "materialized_train": 14,
+      "materialized_validation": 5,
+      "status": "shortage",
+      "shortage_train": 1,
+      "shortage_validation": 0,
+      "notes": "Usable train and validation records exist, but materialized counts are below target after exclusions."
+    },
+    "дом": {
+      "target_train": 15,
+      "target_validation": 5,
+      "materialized_train": 14,
+      "materialized_validation": 5,
+      "status": "shortage",
+      "shortage_train": 1,
+      "shortage_validation": 0,
+      "notes": "Usable train and validation records exist, but materialized counts are below target after exclusions."
+    },
+    "вода": {
+      "target_train": 15,
+      "target_validation": 5,
+      "materialized_train": 14,
+      "materialized_validation": 5,
+      "status": "shortage",
+      "shortage_train": 1,
+      "shortage_validation": 0,
+      "notes": "Usable train and validation records exist, but materialized counts are below target after exclusions."
+    },
+    "работать": {
+      "target_train": 15,
+      "target_validation": 5,
+      "materialized_train": 14,
+      "materialized_validation": 5,
+      "status": "shortage",
+      "shortage_train": 1,
+      "shortage_validation": 0,
+      "notes": "Usable train and validation records exist, but materialized counts are below target after exclusions."
+    },
+    "_no_event": {
+      "target_train": 10,
+      "target_validation": 4,
+      "materialized_train": 10,
+      "materialized_validation": 4,
+      "status": "ok",
+      "shortage_train": 0,
+      "shortage_validation": 0,
+      "notes": "Runtime background class was materialized from explicit Slovo no_event rows."
+    }
+  },
+  "live_smoke_excluded_sample_ids": [
+    "slovo_da_2b1b2857",
+    "slovo_dom_524d6b8f",
+    "slovo_horosho_43791c91",
+    "slovo_ploho_27560a7e",
+    "slovo_poka_8ba230dc",
+    "slovo_privet_f17a6060",
+    "slovo_rabotat_ffce2323",
+    "slovo_ulica_908f133b",
+    "slovo_utro_c1766b2e",
+    "slovo_voda_90db4617"
+  ],
+  "limitations": [
+    "Small per-class Slovo subset; most gesture classes have 19 records after live smoke exclusions.",
+    "Classifier uses MediaPipe pose features and a lightweight ridge-linear ONNX model.",
+    "Segmentation artifact is deterministic for isolated one-gesture clips and is not a production sign boundary model."
+  ],
+  "artifact": {
+    "manifest_path": "artifacts/runtime/active/pose_words/manifest.json",
+    "classifier_model": {
+      "relative_path": "classifier/model.onnx",
+      "component": "pose_words_classifier",
+      "artifact_kind": "model",
+      "required": true,
+      "trained": true,
+      "size_bytes": 25855,
+      "sha256": "cc09bdba1bc29666a2f09992c24c736b7cc832e56e2be767f018b013c95a4e2a"
+    },
+    "classifier_labels": {
+      "relative_path": "classifier/labels.txt",
+      "component": "pose_words_classifier",
+      "artifact_kind": "labels",
+      "required": true,
+      "trained": true,
+      "size_bytes": 114,
+      "sha256": "4a396fadf60f00e6f58ad7a3dafa49ae05fc1c93e039dec12b2cce59df76635f"
+    },
+    "segmentation_model": {
+      "relative_path": "segmentation/model.onnx",
+      "component": "bio_segmentation",
+      "artifact_kind": "model",
+      "required": true,
+      "trained": false,
+      "size_bytes": 815,
+      "sha256": "2d79af54e10ae38c158a7ace3a83effce0e311b5a9ca8e75a96050ff517a1c4b"
+    }
+  }
+}

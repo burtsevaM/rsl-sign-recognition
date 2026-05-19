@@ -315,6 +315,14 @@ def test_packaged_pose_words_active_pack_loads() -> None:
         "_no_event",
         "привет",
         "пока",
+        "да",
+        "хорошо",
+        "плохо",
+        "утро",
+        "улица",
+        "дом",
+        "вода",
+        "работать",
     ]
     assert resolved.classifier_config_path is not None
     assert resolved.segmentation_config_path is not None

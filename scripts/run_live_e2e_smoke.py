@@ -57,6 +57,14 @@ class SampleResult:
     committed_labels: tuple[str, ...]
 
 
+@dataclass(frozen=True, slots=True)
+class SmokeExitDecision:
+    passed_count: int
+    total_count: int
+    threshold: int
+    success: bool
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         description=(
@@ -92,6 +100,15 @@ def build_parser() -> argparse.ArgumentParser:
         help="Maximum number of manifest samples to run when --sample-id is absent.",
     )
     parser.add_argument(
+        "--min-passed",
+        type=int,
+        default=None,
+        help=(
+            "Optional minimum number of passing samples required for exit code 0. "
+            "Defaults to all selected samples."
+        ),
+    )
+    parser.add_argument(
         "--max-frames",
         type=int,
         default=0,
@@ -119,6 +136,15 @@ def build_parser() -> argparse.ArgumentParser:
         "--realtime",
         action="store_true",
         help="Sleep between frames using sample FPS to mimic real-time cadence.",
+    )
+    parser.add_argument(
+        "--flush-boundary-frames",
+        type=int,
+        default=1,
+        help=(
+            "Number of black no-hand frames sent after each clip to flush an "
+            "active isolated gesture segment."
+        ),
     )
     return parser
 
@@ -297,6 +323,15 @@ def iter_jpeg_frames(
             break
 
 
+def black_jpeg_frame(*, jpeg_quality: int) -> bytes:
+    if not 1 <= jpeg_quality <= 100:
+        raise SmokeError("--jpeg-quality must be in range 1..100")
+    image = Image.new("RGB", (32, 32), color=(0, 0, 0))
+    buffer = BytesIO()
+    image.save(buffer, format="JPEG", quality=jpeg_quality)
+    return buffer.getvalue()
+
+
 def validate_recognition_result(message: dict[str, object]) -> dict[str, object]:
     if message.get("type") != "recognition.result":
         raise SmokeError(f"expected recognition.result, got: {message}")
@@ -330,6 +365,36 @@ def sample_passed(
     return committed and actual_label == expected_label
 
 
+def validate_min_passed(min_passed: int | None, *, total_samples: int) -> int:
+    if total_samples < 1:
+        raise SmokeError("no samples were selected for threshold evaluation")
+    if min_passed is None:
+        return total_samples
+    if min_passed < 1:
+        raise SmokeError("--min-passed must be at least 1")
+    if min_passed > total_samples:
+        raise SmokeError(
+            "--min-passed cannot exceed the number of selected samples: "
+            f"min_passed={min_passed}, selected={total_samples}"
+        )
+    return min_passed
+
+
+def exit_decision(
+    results: list[SampleResult],
+    *,
+    min_passed: int | None,
+) -> SmokeExitDecision:
+    threshold = validate_min_passed(min_passed, total_samples=len(results))
+    passed_count = sum(result.passed for result in results)
+    return SmokeExitDecision(
+        passed_count=passed_count,
+        total_count=len(results),
+        threshold=threshold,
+        success=passed_count >= threshold,
+    )
+
+
 async def run_sample(
     sample: SmokeSample,
     *,
@@ -338,6 +403,7 @@ async def run_sample(
     frame_stride: int,
     jpeg_quality: int,
     realtime: bool,
+    flush_boundary_frames: int,
 ) -> SampleResult:
     websockets = require_dependency(
         "websockets",
@@ -352,14 +418,18 @@ async def run_sample(
     frame_delay = (1.0 / sample.fps) if realtime and sample.fps else 0.0
 
     async with websockets.connect(ws_url, max_size=8 * 1024 * 1024) as websocket:
-        for frame_bytes in iter_jpeg_frames(
-            sample,
-            max_frames=max_frames,
-            frame_stride=frame_stride,
-            jpeg_quality=jpeg_quality,
-        ):
+        def remember_commit(payload: dict[str, object]) -> None:
+            nonlocal actual_label, confidence, committed
+            text_state = payload["text_state"]
+            is_committed = bool(text_state.get("committed"))
+            if is_committed:
+                committed = True
+                actual_label = str(payload["word"])
+                confidence = float(payload["confidence"])
+                committed_labels.append(actual_label)
+
+        async def send_and_receive(frame_bytes: bytes) -> None:
             await websocket.send(frame_bytes)
-            frames_sent += 1
             raw_message = await websocket.recv()
             if not isinstance(raw_message, str):
                 raise SmokeError("backend returned a non-text WebSocket response")
@@ -371,17 +441,24 @@ async def run_sample(
                 raise SmokeError("backend returned non-object JSON over WebSocket")
             if message.get("type") == "error":
                 raise SmokeError(f"backend returned error for {sample.sample_id}: {message}")
+            remember_commit(validate_recognition_result(message))
 
-            payload = validate_recognition_result(message)
-            text_state = payload["text_state"]
-            is_committed = bool(text_state.get("committed"))
-            if is_committed:
-                committed = True
-                actual_label = str(payload["word"])
-                confidence = float(payload["confidence"])
-                committed_labels.append(actual_label)
+        for frame_bytes in iter_jpeg_frames(
+            sample,
+            max_frames=max_frames,
+            frame_stride=frame_stride,
+            jpeg_quality=jpeg_quality,
+        ):
+            await send_and_receive(frame_bytes)
+            frames_sent += 1
             if frame_delay > 0:
                 await asyncio.sleep(frame_delay)
+        if flush_boundary_frames < 0:
+            raise SmokeError("--flush-boundary-frames must be non-negative")
+        boundary = black_jpeg_frame(jpeg_quality=jpeg_quality)
+        for _ in range(flush_boundary_frames):
+            await send_and_receive(boundary)
+            frames_sent += 1
 
     passed = sample_passed(
         expected_label=sample.expected_label,
@@ -402,14 +479,15 @@ async def run_sample(
 
 async def run_smoke(args: argparse.Namespace) -> list[SampleResult]:
     base_url = args.base_url.rstrip("/")
-    verify_health(base_url, timeout_seconds=args.http_timeout_seconds)
-    verify_ready(base_url, timeout_seconds=args.http_timeout_seconds)
     manifest_path = repo_relative_path(args.sample_manifest)
     samples = load_samples(
         manifest_path,
         sample_ids=args.sample_ids,
         max_samples=args.max_samples,
     )
+    validate_min_passed(args.min_passed, total_samples=len(samples))
+    verify_health(base_url, timeout_seconds=args.http_timeout_seconds)
+    verify_ready(base_url, timeout_seconds=args.http_timeout_seconds)
     ws_url = args.ws_url or ws_url_for(base_url)
     results: list[SampleResult] = []
     for sample in samples:
@@ -421,12 +499,18 @@ async def run_smoke(args: argparse.Namespace) -> list[SampleResult]:
                 frame_stride=args.frame_stride,
                 jpeg_quality=args.jpeg_quality,
                 realtime=args.realtime,
+                flush_boundary_frames=args.flush_boundary_frames,
             )
         )
     return results
 
 
-def print_summary(results: list[SampleResult]) -> None:
+def print_summary(
+    results: list[SampleResult],
+    *,
+    min_passed: int | None = None,
+    elapsed_seconds: float | None = None,
+) -> None:
     print("sample_id | expected | actual | pass | confidence | committed | frames")
     print("--- | --- | --- | --- | --- | --- | ---")
     for result in results:
@@ -440,6 +524,21 @@ def print_summary(results: list[SampleResult]) -> None:
         if result.committed_labels:
             labels = ", ".join(result.committed_labels)
             print(f"  committed_labels: {labels}")
+    decision = exit_decision(results, min_passed=min_passed)
+    elapsed = "" if elapsed_seconds is None else f" in {elapsed_seconds:.2f}s"
+    print(
+        "summary: "
+        f"{decision.passed_count}/{decision.total_count} passed{elapsed}"
+    )
+    print(
+        "threshold: "
+        f"{decision.threshold}/{decision.total_count} passed required"
+    )
+    print(
+        "exit_decision: "
+        f"{'success' if decision.success else 'failure'} "
+        f"({'passed >= threshold' if decision.success else 'passed < threshold'})"
+    )
 
 
 def main() -> int:
@@ -454,14 +553,12 @@ def main() -> int:
         print("ERROR: interrupted", file=sys.stderr)
         return 130
 
-    print_summary(results)
-    passed = all(result.passed for result in results)
-    print(
-        "summary: "
-        f"{sum(result.passed for result in results)}/{len(results)} passed "
-        f"in {time.monotonic() - started_at:.2f}s"
+    print_summary(
+        results,
+        min_passed=args.min_passed,
+        elapsed_seconds=time.monotonic() - started_at,
     )
-    return 0 if passed else 1
+    return 0 if exit_decision(results, min_passed=args.min_passed).success else 1
 
 
 if __name__ == "__main__":

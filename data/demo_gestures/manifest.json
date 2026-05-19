@@ -30,7 +30,7 @@
       "source_id": "slovo_trimmed_archive",
       "kind": "archive",
       "expected_env_var": "SLOVO_TRIMMED_ARCHIVE",
-      "default_local_path": "/Users/mariaburtseva/Documents/проект грант/mvp1/SuperLuchito--SimpleGesture2Letter-Model-Version-2/backend/data/slovo/slovo.zip",
+      "default_local_path": "data/slovo/slovo.zip",
       "required_for": [
         "gesture_train",
         "gesture_validation"

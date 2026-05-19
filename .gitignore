@@ -3,6 +3,7 @@
 __pycache__/
 *.py[cod]
 *.egg-info/
+.cache/
 .pytest_cache/
 
 # Local heavy dataset inputs and materialized video subsets

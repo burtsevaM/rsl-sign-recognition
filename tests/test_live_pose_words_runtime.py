@@ -506,6 +506,36 @@ def test_live_pose_words_runtime_flushes_active_segment_on_no_hand_boundary(
     assert flushed.recognition.label == "привет"
 
 
+def test_live_pose_words_runtime_classifies_short_flush_segment_before_full_window(
+    tmp_path: Path,
+) -> None:
+    write_active_pack(
+        tmp_path,
+        segmentation_runtime_config=(
+            '{"window_size": 20, "step": 1, "min_segment_len": 1}'
+        ),
+    )
+    service = LivePoseWordsRuntimeService.from_settings(
+        build_settings(tmp_path),
+        pipeline_factory=fake_pipeline_factory_with_no_hand_boundary,
+    )
+    result = service.create_session(max_buffer=32)
+    assert result.created
+    assert result.session is not None
+    session = result.session
+
+    for _ in range(6):
+        event = session.push_feature(np.ones(159, dtype=np.float32))
+        assert event.status is PoseWordsRuntimeEventStatus.NO_RESULT
+
+    flushed = session.push_frame(np.zeros((2, 2, 3), dtype=np.uint8))
+
+    assert flushed.status is PoseWordsRuntimeEventStatus.RESULT
+    assert flushed.recognition is not None
+    assert flushed.recognition.label == "привет"
+    assert flushed.buffer.length == 6
+
+
 def test_live_pose_words_runtime_no_hand_boundary_without_active_segment_stays_no_result(
     tmp_path: Path,
 ) -> None:
