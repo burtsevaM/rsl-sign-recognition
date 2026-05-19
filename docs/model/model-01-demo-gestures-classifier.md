@@ -132,5 +132,6 @@ Runtime loads the new active pack through `artifacts/runtime/active/pose_words/m
 
 - Small dataset: most gesture classes have only 19 materialized records after live-smoke exclusions.
 - Validation accuracy is modest; `привет` and `утро` remain weak offline/live classes.
+- Follow-up for improving demo classifier quality to `9/10` or `10/10` live smoke: #85.
 - The segmentation artifact is deterministic for isolated one-gesture clips and is not a production sign boundary model.
 - This closes the active classifier pack gap for #78; broader QA around #76 / PR #77 should still update downstream smoke ownership separately.

@@ -57,6 +57,14 @@ class SampleResult:
     committed_labels: tuple[str, ...]
 
 
+@dataclass(frozen=True, slots=True)
+class SmokeExitDecision:
+    passed_count: int
+    total_count: int
+    threshold: int
+    success: bool
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         description=(
@@ -90,6 +98,15 @@ def build_parser() -> argparse.ArgumentParser:
         type=int,
         default=5,
         help="Maximum number of manifest samples to run when --sample-id is absent.",
+    )
+    parser.add_argument(
+        "--min-passed",
+        type=int,
+        default=None,
+        help=(
+            "Optional minimum number of passing samples required for exit code 0. "
+            "Defaults to all selected samples."
+        ),
     )
     parser.add_argument(
         "--max-frames",
@@ -348,6 +365,36 @@ def sample_passed(
     return committed and actual_label == expected_label
 
 
+def validate_min_passed(min_passed: int | None, *, total_samples: int) -> int:
+    if total_samples < 1:
+        raise SmokeError("no samples were selected for threshold evaluation")
+    if min_passed is None:
+        return total_samples
+    if min_passed < 1:
+        raise SmokeError("--min-passed must be at least 1")
+    if min_passed > total_samples:
+        raise SmokeError(
+            "--min-passed cannot exceed the number of selected samples: "
+            f"min_passed={min_passed}, selected={total_samples}"
+        )
+    return min_passed
+
+
+def exit_decision(
+    results: list[SampleResult],
+    *,
+    min_passed: int | None,
+) -> SmokeExitDecision:
+    threshold = validate_min_passed(min_passed, total_samples=len(results))
+    passed_count = sum(result.passed for result in results)
+    return SmokeExitDecision(
+        passed_count=passed_count,
+        total_count=len(results),
+        threshold=threshold,
+        success=passed_count >= threshold,
+    )
+
+
 async def run_sample(
     sample: SmokeSample,
     *,
@@ -432,14 +479,15 @@ async def run_sample(
 
 async def run_smoke(args: argparse.Namespace) -> list[SampleResult]:
     base_url = args.base_url.rstrip("/")
-    verify_health(base_url, timeout_seconds=args.http_timeout_seconds)
-    verify_ready(base_url, timeout_seconds=args.http_timeout_seconds)
     manifest_path = repo_relative_path(args.sample_manifest)
     samples = load_samples(
         manifest_path,
         sample_ids=args.sample_ids,
         max_samples=args.max_samples,
     )
+    validate_min_passed(args.min_passed, total_samples=len(samples))
+    verify_health(base_url, timeout_seconds=args.http_timeout_seconds)
+    verify_ready(base_url, timeout_seconds=args.http_timeout_seconds)
     ws_url = args.ws_url or ws_url_for(base_url)
     results: list[SampleResult] = []
     for sample in samples:
@@ -457,7 +505,12 @@ async def run_smoke(args: argparse.Namespace) -> list[SampleResult]:
     return results
 
 
-def print_summary(results: list[SampleResult]) -> None:
+def print_summary(
+    results: list[SampleResult],
+    *,
+    min_passed: int | None = None,
+    elapsed_seconds: float | None = None,
+) -> None:
     print("sample_id | expected | actual | pass | confidence | committed | frames")
     print("--- | --- | --- | --- | --- | --- | ---")
     for result in results:
@@ -471,6 +524,21 @@ def print_summary(results: list[SampleResult]) -> None:
         if result.committed_labels:
             labels = ", ".join(result.committed_labels)
             print(f"  committed_labels: {labels}")
+    decision = exit_decision(results, min_passed=min_passed)
+    elapsed = "" if elapsed_seconds is None else f" in {elapsed_seconds:.2f}s"
+    print(
+        "summary: "
+        f"{decision.passed_count}/{decision.total_count} passed{elapsed}"
+    )
+    print(
+        "threshold: "
+        f"{decision.threshold}/{decision.total_count} passed required"
+    )
+    print(
+        "exit_decision: "
+        f"{'success' if decision.success else 'failure'} "
+        f"({'passed >= threshold' if decision.success else 'passed < threshold'})"
+    )
 
 
 def main() -> int:
@@ -485,14 +553,12 @@ def main() -> int:
         print("ERROR: interrupted", file=sys.stderr)
         return 130
 
-    print_summary(results)
-    passed = all(result.passed for result in results)
-    print(
-        "summary: "
-        f"{sum(result.passed for result in results)}/{len(results)} passed "
-        f"in {time.monotonic() - started_at:.2f}s"
+    print_summary(
+        results,
+        min_passed=args.min_passed,
+        elapsed_seconds=time.monotonic() - started_at,
     )
-    return 0 if passed else 1
+    return 0 if exit_decision(results, min_passed=args.min_passed).success else 1
 
 
 if __name__ == "__main__":
