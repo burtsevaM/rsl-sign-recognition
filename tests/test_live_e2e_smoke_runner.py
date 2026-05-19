@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import importlib.util
 import json
 from pathlib import Path
@@ -15,6 +16,19 @@ assert SPEC.loader is not None
 RUNNER = importlib.util.module_from_spec(SPEC)
 sys.modules[SPEC.name] = RUNNER
 SPEC.loader.exec_module(RUNNER)
+
+EXPECTED_TRACKED_BUNDLE = {
+    "slovo_privet_f17a6060": "привет",
+    "slovo_poka_8ba230dc": "пока",
+    "slovo_da_2b1b2857": "да",
+    "slovo_horosho_43791c91": "хорошо",
+    "slovo_ploho_27560a7e": "плохо",
+    "slovo_utro_c1766b2e": "утро",
+    "slovo_ulica_908f133b": "улица",
+    "slovo_dom_524d6b8f": "дом",
+    "slovo_voda_90db4617": "вода",
+    "slovo_rabotat_ffce2323": "работать",
+}
 
 
 def sample_entry(sample_path: Path, *, sample_id: str = "sample_01") -> dict[str, object]:
@@ -88,6 +102,46 @@ def test_load_samples_runs_full_bundle_when_max_samples_is_zero(tmp_path: Path) 
         "sample_02",
         "sample_03",
     ]
+
+
+def test_tracked_live_sample_bundle_matches_manifest_metadata() -> None:
+    manifest_path = RUNNER.REPO_ROOT / "data/live_samples/manifest.json"
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    samples = manifest["samples"]
+
+    assert manifest["bundle_id"] == "DATA-02-live-sample-bundle-v3"
+    assert len(samples) == 10
+    actual_labels_by_sample_id = {
+        sample["sample_id"]: sample["expected_label"]
+        for sample in samples
+    }
+    assert actual_labels_by_sample_id == EXPECTED_TRACKED_BUNDLE
+
+    for sample in samples:
+        local_path = Path(sample["local_path"])
+        assert not local_path.is_absolute()
+        sample_path = RUNNER.REPO_ROOT / local_path
+        assert sample_path.is_file()
+        assert sample["live_input"] is True
+        assert sample["byte_size"] == sample_path.stat().st_size
+        assert hashlib.sha256(sample_path.read_bytes()).hexdigest() == sample["sha256"]
+
+        source = sample["source"]
+        for field in (
+            "name",
+            "origin",
+            "upstream_repository",
+            "upstream_path",
+            "license",
+            "license_url",
+            "attribution",
+            "modified",
+            "modification_notes",
+        ):
+            assert field in source
+        assert source["modified"] is False
+        assert source["upstream_repository"] == "https://github.com/hukenovs/slovo"
+        assert source["license"] == "CC BY-SA 4.0"
 
 
 def test_load_samples_rejects_missing_source_metadata(tmp_path: Path) -> None:
