@@ -169,3 +169,5 @@ summary: 1/1 passed
 4. прогнать manual `Live E2E Smoke` на всем bundle-е и честно сохранить `N/N` или `K/N` результат в report.
 
 До появления таких sample-артефактов расширение beyond `1` gesture остается data gap, а не скрытой недоделкой runner-а.
+
+После `QA-03` этот follow-up вынесен в отдельную задачу `DATA-02 / QA-04`; актуальный bundle уже расширен до `10` tracked samples, а правила интерпретации результата и связь с model gap зафиксированы в [docs/qa/live-sample-bundle.md](live-sample-bundle.md) и [docs/qa/qa-04-live-smoke-demo-dictionary.md](qa-04-live-smoke-demo-dictionary.md).

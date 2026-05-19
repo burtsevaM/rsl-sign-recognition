@@ -1,13 +1,13 @@
 {
   "schema_version": 1,
   "report_id": "MODEL-01-PW-07-demo-gestures-classifier-results-v1",
-  "generated_at_unix": 1779190821.675232,
-  "duration_seconds": 1.01,
-  "training_command": "python3 scripts/train_demo_gestures_classifier.py --config configs/demo_gestures_classifier.json --slovo-root data/slovo",
+  "generated_at_unix": 1779200538.40207,
+  "duration_seconds": 389.924,
+  "training_command": "python3 scripts/train_demo_gestures_classifier.py --config configs/demo_gestures_classifier.json",
   "config_path": "configs/demo_gestures_classifier.json",
   "materialized_manifest": "data/demo_gestures/materialized_manifest.json",
   "source_manifest": "data/demo_gestures/manifest.json",
-  "source_archive": "/Users/luchito/Desktop/rsl-work/rsl-sign-recognition/data/slovo/slovo.zip",
+  "source_archive": "/Users/mariaburtseva/Documents/проект грант/mvp1/SuperLuchito--SimpleGesture2Letter-Model-Version-2/backend/data/slovo/slovo.zip",
   "label_set": [
     "_no_event",
     "привет",
@@ -86,14 +86,14 @@
     }
   },
   "source_check": {
-    "archive": "/Users/luchito/Desktop/rsl-work/rsl-sign-recognition/data/slovo/slovo.zip",
+    "archive": "/Users/mariaburtseva/Documents/проект грант/mvp1/SuperLuchito--SimpleGesture2Letter-Model-Version-2/backend/data/slovo/slovo.zip",
     "checked_samples": 204
   },
   "feature_extraction": {
     "config": {
       "clip_frames": 32,
       "feature_dim": 159,
-      "segment_window": 20,
+      "segment_window": 18,
       "segment_step": 4,
       "min_feature_frames": 6,
       "model_complexity": 1,
@@ -109,67 +109,67 @@
         "samples": 14,
         "min_feature_frames": 32,
         "avg_feature_frames": 49.0,
-        "cache_hits": 14
+        "cache_hits": 0
       },
       "привет": {
         "samples": 19,
         "min_feature_frames": 21,
         "avg_feature_frames": 45.895,
-        "cache_hits": 19
+        "cache_hits": 0
       },
       "пока": {
         "samples": 19,
         "min_feature_frames": 29,
         "avg_feature_frames": 40.053,
-        "cache_hits": 19
+        "cache_hits": 0
       },
       "да": {
         "samples": 19,
         "min_feature_frames": 13,
         "avg_feature_frames": 33.211,
-        "cache_hits": 19
+        "cache_hits": 0
       },
       "хорошо": {
         "samples": 19,
         "min_feature_frames": 16,
         "avg_feature_frames": 37.526,
-        "cache_hits": 19
+        "cache_hits": 0
       },
       "плохо": {
         "samples": 19,
         "min_feature_frames": 22,
         "avg_feature_frames": 39.737,
-        "cache_hits": 19
+        "cache_hits": 0
       },
       "утро": {
         "samples": 19,
         "min_feature_frames": 27,
         "avg_feature_frames": 41.0,
-        "cache_hits": 19
+        "cache_hits": 0
       },
       "улица": {
         "samples": 19,
         "min_feature_frames": 34,
         "avg_feature_frames": 44.263,
-        "cache_hits": 19
+        "cache_hits": 0
       },
       "дом": {
         "samples": 19,
         "min_feature_frames": 2,
         "avg_feature_frames": 31.105,
-        "cache_hits": 19
+        "cache_hits": 0
       },
       "вода": {
         "samples": 19,
         "min_feature_frames": 25,
         "avg_feature_frames": 38.737,
-        "cache_hits": 19
+        "cache_hits": 0
       },
       "работать": {
         "samples": 19,
         "min_feature_frames": 0,
         "avg_feature_frames": 40.579,
-        "cache_hits": 19
+        "cache_hits": 0
       }
     },
     "failures": [],
@@ -439,42 +439,42 @@
   },
   "validation_metrics": {
     "sample_count": 52,
-    "correct": 34,
-    "accuracy": 0.653846,
+    "correct": 35,
+    "accuracy": 0.673077,
     "classes": [
       {
         "label": "_no_event",
-        "precision": 0.571429,
+        "precision": 0.666667,
         "recall": 1.0,
-        "f1": 0.727273,
+        "f1": 0.8,
         "support": 4
       },
       {
         "label": "привет",
-        "precision": 0.2,
-        "recall": 0.2,
-        "f1": 0.2,
-        "support": 5
-      },
-      {
-        "label": "пока",
-        "precision": 0.666667,
-        "recall": 0.8,
-        "f1": 0.727273,
-        "support": 5
-      },
-      {
-        "label": "да",
         "precision": 0.666667,
         "recall": 0.4,
         "f1": 0.5,
         "support": 5
       },
       {
+        "label": "пока",
+        "precision": 0.571429,
+        "recall": 0.8,
+        "f1": 0.666667,
+        "support": 5
+      },
+      {
+        "label": "да",
+        "precision": 0.5,
+        "recall": 0.2,
+        "f1": 0.285714,
+        "support": 5
+      },
+      {
         "label": "хорошо",
         "precision": 1.0,
-        "recall": 0.4,
-        "f1": 0.571429,
+        "recall": 0.6,
+        "f1": 0.75,
         "support": 5
       },
       {
@@ -486,9 +486,9 @@
       },
       {
         "label": "утро",
-        "precision": 0.4,
+        "precision": 0.333333,
         "recall": 0.5,
-        "f1": 0.444444,
+        "f1": 0.4,
         "support": 4
       },
       {
@@ -507,16 +507,16 @@
       },
       {
         "label": "вода",
-        "precision": 0.6,
+        "precision": 0.75,
         "recall": 0.6,
-        "f1": 0.6,
+        "f1": 0.666667,
         "support": 5
       },
       {
         "label": "работать",
-        "precision": 0.8,
+        "precision": 0.571429,
         "recall": 0.8,
-        "f1": 0.8,
+        "f1": 0.666667,
         "support": 5
       }
     ],
@@ -539,15 +539,7 @@
         "window_kind": "prefix",
         "expected_label": "привет",
         "predicted_label": "утро",
-        "confidence": 0.380141
-      },
-      {
-        "sample_id": "slovo_privet_114b7380",
-        "split": "validation",
-        "window_kind": "prefix",
-        "expected_label": "привет",
-        "predicted_label": "пока",
-        "confidence": 0.507
+        "confidence": 0.549075
       },
       {
         "sample_id": "slovo_privet_5a954f84",
@@ -555,15 +547,15 @@
         "window_kind": "prefix",
         "expected_label": "привет",
         "predicted_label": "утро",
-        "confidence": 0.875232
+        "confidence": 0.754033
       },
       {
         "sample_id": "slovo_privet_fb3ec88e",
         "split": "validation",
         "window_kind": "prefix",
         "expected_label": "привет",
-        "predicted_label": "_no_event",
-        "confidence": 0.698838
+        "predicted_label": "утро",
+        "confidence": 0.812054
       },
       {
         "sample_id": "slovo_poka_6530c126",
@@ -571,23 +563,31 @@
         "window_kind": "prefix",
         "expected_label": "пока",
         "predicted_label": "вода",
-        "confidence": 0.950474
+        "confidence": 0.794019
       },
       {
         "sample_id": "slovo_da_60ec20bb",
         "split": "validation",
         "window_kind": "prefix",
         "expected_label": "да",
-        "predicted_label": "привет",
-        "confidence": 0.402595
+        "predicted_label": "улица",
+        "confidence": 0.483953
       },
       {
         "sample_id": "slovo_da_6fd72124",
         "split": "validation",
         "window_kind": "prefix",
         "expected_label": "да",
-        "predicted_label": "привет",
-        "confidence": 0.838434
+        "predicted_label": "работать",
+        "confidence": 0.921234
+      },
+      {
+        "sample_id": "slovo_da_d7c749ff",
+        "split": "validation",
+        "window_kind": "prefix",
+        "expected_label": "да",
+        "predicted_label": "работать",
+        "confidence": 0.858361
       },
       {
         "sample_id": "slovo_da_e1651e4b",
@@ -595,15 +595,7 @@
         "window_kind": "prefix",
         "expected_label": "да",
         "predicted_label": "работать",
-        "confidence": 0.828528
-      },
-      {
-        "sample_id": "slovo_horosho_170db63a",
-        "split": "validation",
-        "window_kind": "prefix",
-        "expected_label": "хорошо",
-        "predicted_label": "улица",
-        "confidence": 0.56691
+        "confidence": 0.73915
       },
       {
         "sample_id": "slovo_horosho_5c77dd00",
@@ -611,7 +603,7 @@
         "window_kind": "prefix",
         "expected_label": "хорошо",
         "predicted_label": "привет",
-        "confidence": 0.844605
+        "confidence": 0.884529
       },
       {
         "sample_id": "slovo_horosho_fecaec6d",
@@ -619,7 +611,7 @@
         "window_kind": "prefix",
         "expected_label": "хорошо",
         "predicted_label": "_no_event",
-        "confidence": 0.610432
+        "confidence": 0.764254
       },
       {
         "sample_id": "slovo_utro_d6d44d8f",
@@ -627,15 +619,15 @@
         "window_kind": "prefix",
         "expected_label": "утро",
         "predicted_label": "_no_event",
-        "confidence": 0.462472
+        "confidence": 0.397606
       },
       {
         "sample_id": "slovo_utro_f675502f",
         "split": "validation",
         "window_kind": "prefix",
         "expected_label": "утро",
-        "predicted_label": "вода",
-        "confidence": 0.500658
+        "predicted_label": "улица",
+        "confidence": 0.408278
       },
       {
         "sample_id": "slovo_ulica_a6c319ec",
@@ -643,15 +635,15 @@
         "window_kind": "prefix",
         "expected_label": "улица",
         "predicted_label": "утро",
-        "confidence": 0.954151
+        "confidence": 0.980617
       },
       {
         "sample_id": "slovo_dom_124d90be",
         "split": "validation",
         "window_kind": "prefix",
         "expected_label": "дом",
-        "predicted_label": "улица",
-        "confidence": 0.383072
+        "predicted_label": "пока",
+        "confidence": 0.621552
       },
       {
         "sample_id": "slovo_voda_41877695",
@@ -659,15 +651,15 @@
         "window_kind": "prefix",
         "expected_label": "вода",
         "predicted_label": "пока",
-        "confidence": 0.905539
+        "confidence": 0.554628
       },
       {
         "sample_id": "slovo_voda_d11cad4b",
         "split": "validation",
         "window_kind": "prefix",
         "expected_label": "вода",
-        "predicted_label": "привет",
-        "confidence": 0.637154
+        "predicted_label": "пока",
+        "confidence": 0.385898
       },
       {
         "sample_id": "slovo_rabotat_50b956c5",
@@ -675,7 +667,7 @@
         "window_kind": "prefix",
         "expected_label": "работать",
         "predicted_label": "да",
-        "confidence": 0.879194
+        "confidence": 0.309293
       }
     ],
     "confusion_matrix": [
@@ -693,13 +685,13 @@
         0
       ],
       [
-        1,
-        1,
-        1,
-        0,
-        0,
         0,
         2,
+        0,
+        0,
+        0,
+        0,
+        3,
         0,
         0,
         0,
@@ -720,26 +712,26 @@
       ],
       [
         0,
-        2,
-        0,
-        2,
         0,
         0,
+        1,
         0,
         0,
         0,
+        1,
         0,
-        1
+        0,
+        3
       ],
       [
         1,
         1,
         0,
         0,
-        2,
+        3,
         0,
         0,
-        1,
+        0,
         0,
         0,
         0
@@ -765,9 +757,9 @@
         0,
         0,
         2,
-        0,
-        0,
         1,
+        0,
+        0,
         0
       ],
       [
@@ -786,20 +778,20 @@
       [
         0,
         0,
-        0,
-        0,
-        0,
-        0,
-        0,
         1,
+        0,
+        0,
+        0,
+        0,
+        0,
         3,
         0,
         0
       ],
       [
         0,
-        1,
-        1,
+        0,
+        2,
         0,
         0,
         0,
@@ -1034,7 +1026,7 @@
       "required": true,
       "trained": true,
       "size_bytes": 25855,
-      "sha256": "cc09bdba1bc29666a2f09992c24c736b7cc832e56e2be767f018b013c95a4e2a"
+      "sha256": "74bf079a903e782bafebc8e333e2bf4507027d631fdd09cad5801b7a8fb70645"
     },
     "classifier_labels": {
       "relative_path": "classifier/labels.txt",
@@ -1051,8 +1043,8 @@
       "artifact_kind": "model",
       "required": true,
       "trained": false,
-      "size_bytes": 815,
-      "sha256": "2d79af54e10ae38c158a7ace3a83effce0e311b5a9ca8e75a96050ff517a1c4b"
+      "size_bytes": 767,
+      "sha256": "d356f81054cb38d0b5ddcc89861bd0e64637b4fd5c169264da1f3010dbda6bb9"
     }
   }
 }

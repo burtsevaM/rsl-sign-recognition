@@ -81,7 +81,8 @@
 - [docs/model/model-01-demo-gestures-classifier.md](docs/model/model-01-demo-gestures-classifier.md) — MODEL-01 / PW-07 training report и offline validation для 10 demo gestures
 - [docs/qa/model-01-live-smoke.md](docs/qa/model-01-live-smoke.md) — full и single-sample live smoke evidence для #78
 - [docs/validation/pose_words-offline-quality.md](docs/validation/pose_words-offline-quality.md) — historical PW-06 synthetic offline quality validation для ART-03 `pose_words` pack
-- [docs/qa/live-sample-bundle.md](docs/qa/live-sample-bundle.md) — DATA-01 portable live sample bundle для будущего QA-03 e2e smoke
+- [docs/qa/live-sample-bundle.md](docs/qa/live-sample-bundle.md) — DATA-02 portable live sample bundle для расширенного QA-04 e2e smoke
+- [docs/qa/qa-04-live-smoke-demo-dictionary.md](docs/qa/qa-04-live-smoke-demo-dictionary.md) — QA-04 demo dictionary и правила честной интерпретации расширенного live smoke
 - [docs/mig-02-runtime-required-migration-governance.md](docs/mig-02-runtime-required-migration-governance.md) — governance guardrails и source-to-target mapping для future runtime-required migration issues
 - [docs/qa-01-smoke-test-strategy.md](docs/qa-01-smoke-test-strategy.md) — минимальная smoke test strategy для contract, mock, backend smoke и manual checks
 - [docs/int-01-web-team-handoff-notes.md](docs/int-01-web-team-handoff-notes.md) — минимальные handoff notes для web team вокруг clean runtime surface

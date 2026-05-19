@@ -1,0 +1,333 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <title>RSL camera test</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 900px;
+      margin: 30px auto;
+      line-height: 1.4;
+    }
+
+    video,
+    canvas {
+      width: 480px;
+      max-width: 100%;
+      border: 1px solid #ccc;
+      border-radius: 12px;
+      background: #000;
+    }
+
+    .panel {
+      margin-top: 16px;
+      padding: 14px;
+      border: 1px solid #ddd;
+      border-radius: 12px;
+      background: #fafafa;
+    }
+
+    .big {
+      font-size: 28px;
+      font-weight: bold;
+    }
+
+    button {
+      padding: 10px 14px;
+      margin-right: 8px;
+      cursor: pointer;
+    }
+
+    pre {
+      white-space: pre-wrap;
+      background: #111;
+      color: #eee;
+      padding: 12px;
+      border-radius: 10px;
+      max-height: 300px;
+      overflow: auto;
+    }
+
+    .ok {
+      color: green;
+      font-weight: bold;
+    }
+
+    .bad {
+      color: red;
+      font-weight: bold;
+    }
+  </style>
+</head>
+
+<body>
+  <h1>Проверка распознавания через камеру</h1>
+
+  <p>
+    Нажми <b>Start</b>, разреши камеру, покажи жест «привет».
+    Кадры будут отправляться в <code>ws://127.0.0.1:8000/ws/stream</code>.
+  </p>
+
+  <video id="video" autoplay playsinline muted></video>
+  <canvas id="canvas" width="320" height="240" style="display:none;"></canvas>
+
+  <div class="panel">
+    <button id="startBtn">Start</button>
+    <button id="stopBtn">Stop</button>
+    <button id="clearBtn">Clear text</button>
+  </div>
+
+  <div class="panel">
+    <h2>Текущий ответ backend</h2>
+
+    <div>Статус WebSocket: <b id="wsState">closed</b></div>
+    <div>status: <b id="status">-</b></div>
+    <div>word из последнего сообщения: <b id="currentWord">-</b></div>
+    <div>confidence: <b id="confidence">-</b></div>
+    <div>committed в последнем сообщении: <b id="committed">-</b></div>
+    <div>hand_present: <b id="handPresent">-</b></div>
+  </div>
+
+  <div class="panel">
+    <h2>Последнее реально распознанное слово</h2>
+
+    <div>last committed word:</div>
+    <div class="big" id="lastCommittedWord">-</div>
+
+    <div>last committed confidence: <b id="lastCommittedConfidence">-</b></div>
+    <div>last committed timestamp_ms: <b id="lastCommittedTimestamp">-</b></div>
+  </div>
+
+  <div class="panel">
+    <h2>Накопленный текст</h2>
+    <div class="big" id="textValue">-</div>
+  </div>
+
+  <h3>История COMMIT-сообщений</h3>
+  <pre id="commitLog">[]</pre>
+
+  <h3>Последнее сообщение от backend</h3>
+  <pre id="log"></pre>
+
+  <script>
+    const video = document.getElementById("video");
+    const canvas = document.getElementById("canvas");
+    const ctx = canvas.getContext("2d");
+
+    const wsState = document.getElementById("wsState");
+    const statusEl = document.getElementById("status");
+    const currentWordEl = document.getElementById("currentWord");
+    const confidenceEl = document.getElementById("confidence");
+    const committedEl = document.getElementById("committed");
+    const handPresentEl = document.getElementById("handPresent");
+
+    const lastCommittedWordEl = document.getElementById("lastCommittedWord");
+    const lastCommittedConfidenceEl = document.getElementById("lastCommittedConfidence");
+    const lastCommittedTimestampEl = document.getElementById("lastCommittedTimestamp");
+
+    const textValueEl = document.getElementById("textValue");
+    const logEl = document.getElementById("log");
+    const commitLogEl = document.getElementById("commitLog");
+
+    let stream = null;
+    let ws = null;
+    let timer = null;
+
+    let lastCommittedWord = "-";
+    let lastCommittedConfidence = "-";
+    let lastCommittedTimestamp = "-";
+    let commitHistory = [];
+
+    function setLog(obj) {
+      logEl.textContent =
+        typeof obj === "string"
+          ? obj
+          : JSON.stringify(obj, null, 2);
+    }
+
+    function setCommitLog() {
+      commitLogEl.textContent = JSON.stringify(commitHistory, null, 2);
+    }
+
+    function updateResult(message) {
+      if (message.type === "error") {
+        setLog(message);
+        statusEl.textContent = "ERROR";
+        currentWordEl.textContent = "-";
+        confidenceEl.textContent = "-";
+        committedEl.textContent = "false";
+        handPresentEl.textContent = "-";
+        return;
+      }
+
+      if (message.type !== "recognition.result") {
+        setLog(message);
+        return;
+      }
+
+      const payload = message.payload || {};
+      const textState = payload.text_state || {};
+      const isCommitted = Boolean(textState.committed);
+
+      statusEl.textContent = payload.status ?? "-";
+      currentWordEl.textContent = payload.word ?? "-";
+
+      confidenceEl.textContent =
+        typeof payload.confidence === "number"
+          ? payload.confidence.toFixed(4)
+          : "-";
+
+      committedEl.textContent = String(isCommitted);
+      committedEl.className = isCommitted ? "ok" : "";
+
+      handPresentEl.textContent =
+        typeof payload.hand_present === "boolean"
+          ? String(payload.hand_present)
+          : "-";
+
+      textValueEl.textContent = textState.value || "-";
+
+      if (isCommitted && payload.word && payload.word !== "NONE") {
+        lastCommittedWord = payload.word;
+
+        lastCommittedConfidence =
+          typeof payload.confidence === "number"
+            ? payload.confidence.toFixed(4)
+            : "-";
+
+        lastCommittedTimestamp = payload.timestamp_ms ?? "-";
+
+        commitHistory.push({
+          status: payload.status,
+          word: payload.word,
+          confidence: payload.confidence,
+          committed: textState.committed,
+          text_value: textState.value,
+          hand_present: payload.hand_present,
+          timestamp_ms: payload.timestamp_ms
+        });
+
+        lastCommittedWordEl.textContent = lastCommittedWord;
+        lastCommittedWordEl.className = "big ok";
+
+        lastCommittedConfidenceEl.textContent = lastCommittedConfidence;
+        lastCommittedTimestampEl.textContent = lastCommittedTimestamp;
+
+        setCommitLog();
+      }
+
+      setLog(message);
+    }
+
+    async function start() {
+      if (ws && ws.readyState === WebSocket.OPEN) {
+        return;
+      }
+
+      stream = await navigator.mediaDevices.getUserMedia({
+        video: {
+          width: { ideal: 640 },
+          height: { ideal: 480 },
+          frameRate: { ideal: 15 }
+        },
+        audio: false
+      });
+
+      video.srcObject = stream;
+
+      ws = new WebSocket("ws://127.0.0.1:8000/ws/stream");
+      ws.binaryType = "arraybuffer";
+
+      ws.onopen = () => {
+        wsState.textContent = "open";
+        wsState.className = "ok";
+
+        timer = setInterval(() => {
+          if (!ws || ws.readyState !== WebSocket.OPEN) {
+            return;
+          }
+
+          ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+          canvas.toBlob((blob) => {
+            if (blob && ws && ws.readyState === WebSocket.OPEN) {
+              ws.send(blob);
+            }
+          }, "image/jpeg", 0.9);
+        }, 100);
+      };
+
+      ws.onmessage = (event) => {
+        try {
+          const message = JSON.parse(event.data);
+          updateResult(message);
+        } catch (error) {
+          setLog("Invalid JSON from server: " + event.data);
+        }
+      };
+
+      ws.onerror = () => {
+        wsState.textContent = "error";
+        wsState.className = "bad";
+      };
+
+      ws.onclose = () => {
+        wsState.textContent = "closed";
+        wsState.className = "";
+      };
+    }
+
+    function stop() {
+      if (timer) {
+        clearInterval(timer);
+        timer = null;
+      }
+
+      if (ws) {
+        ws.close();
+        ws = null;
+      }
+
+      if (stream) {
+        for (const track of stream.getTracks()) {
+          track.stop();
+        }
+        stream = null;
+      }
+
+      wsState.textContent = "closed";
+      wsState.className = "";
+    }
+
+    function clearText() {
+      commitHistory = [];
+      setCommitLog();
+
+      lastCommittedWord = "-";
+      lastCommittedConfidence = "-";
+      lastCommittedTimestamp = "-";
+
+      lastCommittedWordEl.textContent = "-";
+      lastCommittedWordEl.className = "big";
+      lastCommittedConfidenceEl.textContent = "-";
+      lastCommittedTimestampEl.textContent = "-";
+      textValueEl.textContent = "-";
+
+      if (!ws || ws.readyState !== WebSocket.OPEN) {
+        return;
+      }
+
+      ws.send(JSON.stringify({
+        type: "control.clear_text",
+        contract_version: "1.0",
+        payload: {}
+      }));
+    }
+
+    document.getElementById("startBtn").addEventListener("click", start);
+    document.getElementById("stopBtn").addEventListener("click", stop);
+    document.getElementById("clearBtn").addEventListener("click", clearText);
+  </script>
+</body>
+</html>

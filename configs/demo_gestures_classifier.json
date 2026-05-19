@@ -22,7 +22,7 @@
   "feature_extraction": {
     "clip_frames": 32,
     "feature_dim": 159,
-    "segment_window": 20,
+    "segment_window": 18,
     "segment_step": 4,
     "min_feature_frames": 6,
     "model_complexity": 1,
@@ -48,7 +48,7 @@
   },
   "segmentation": {
     "type": "deterministic_isolated_gesture_window",
-    "window_size": 20,
+    "window_size": 18,
     "step": 4,
     "min_segment_len": 1,
     "thresholds": {
