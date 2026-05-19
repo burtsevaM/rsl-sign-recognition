@@ -46,12 +46,13 @@ def test_demo_gestures_manifest_is_external_source_contract() -> None:
     assert manifest["target_pipeline"] == "pose_words"
     assert manifest["self_contained"] is False
     assert manifest["storage_mode"] == "external_source_manifest"
-    assert manifest["materialization_status"] == "requires_local_slovo_archive"
+    assert manifest["materialization_status"] == "materialized_with_shortages"
+    assert manifest["materialized_manifest"] == "data/demo_gestures/materialized_manifest.json"
 
 
 def test_final_demo_dictionary_and_counts_are_complete() -> None:
     manifest = load_manifest()
-    counts = manifest["class_counts"]
+    counts = manifest["target_class_counts"]
 
     assert manifest["final_demo_dictionary"] == EXPECTED_GESTURES
     assert isinstance(counts, dict)
@@ -98,7 +99,7 @@ def test_each_gesture_has_train_validation_and_metadata() -> None:
 
 def test_no_event_class_is_declared_with_limitations() -> None:
     manifest = load_manifest()
-    counts = manifest["class_counts"]
+    counts = manifest["target_class_counts"]
     classes = manifest["classes"]
     no_event = next(
         item
@@ -153,3 +154,30 @@ def test_source_and_expected_local_paths_are_recorded() -> None:
     }
     assert expected_sources["slovo_trimmed_archive"]["expected_env_var"] == "SLOVO_TRIMMED_ARCHIVE"
     assert expected_sources["slovo_original_or_360p_archive"]["expected_env_var"] == "SLOVO_ORIGINAL_OR_360P_ARCHIVE"
+    assert "mvp1/SuperLuchito--SimpleGesture2Letter-Model-Version-2" in expected_sources["slovo_trimmed_archive"]["default_local_path"]
+
+
+def test_materialized_counts_are_not_confused_with_targets() -> None:
+    manifest = load_manifest()
+    counts = manifest["materialized_class_counts"]
+
+    assert counts["привет"] == {
+        "train": 0,
+        "validation": 0,
+        "total": 0,
+    }
+    assert counts["пока"] == {
+        "train": 14,
+        "validation": 5,
+        "total": 19,
+    }
+    assert counts["утро"] == {
+        "train": 15,
+        "validation": 4,
+        "total": 19,
+    }
+    assert counts["_no_event"] == {
+        "train": 0,
+        "validation": 0,
+        "total": 0,
+    }

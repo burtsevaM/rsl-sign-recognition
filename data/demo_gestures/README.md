@@ -11,28 +11,34 @@
 - `manifest.json` - machine-readable manifest dataset subset-а;
 - этот `README.md` - report по источникам, splits, ограничениям и связи с downstream задачами.
 
-Полный `Slovo` archive в Git не добавлен: основной trimmed archive занимает около 16 GB. Поэтому текущий PR хранит external-source manifest и правила materialization, а не тяжелые dataset archives.
+Локальный `Slovo` найден в старом проекте `mvp1`:
+
+```text
+/Users/mariaburtseva/Documents/проект грант/mvp1/SuperLuchito--SimpleGesture2Letter-Model-Version-2/backend/data/slovo
+```
+
+Внутри найден `slovo.zip` с `annotations.csv`, `15300` train videos и `5100` test videos. Полный archive занимает около 15 GB и в Git не добавляется.
 
 ## Финальный demo dictionary
 
-| gesture | train count | validation count | source | notes |
-| --- | ---: | ---: | --- | --- |
-| `привет` | 15 | 5 | Slovo trimmed archive | live smoke sample `slovo_privet_f17a6060` исключается из train/validation |
-| `пока` | 15 | 5 | Slovo trimmed archive | upstream spelling `Пока`, runtime label lowercase |
-| `да` | 15 | 5 | Slovo trimmed archive | live smoke sample из PR #77 исключается |
-| `хорошо` | 15 | 5 | Slovo trimmed archive | live smoke sample из PR #77 исключается |
-| `плохо` | 15 | 5 | Slovo trimmed archive | upstream spelling `Плохо`, runtime label lowercase |
-| `утро` | 15 | 5 | Slovo trimmed archive | live smoke sample из PR #77 исключается |
-| `улица` | 15 | 5 | Slovo trimmed archive | live smoke sample из PR #77 исключается |
-| `дом` | 15 | 5 | Slovo trimmed archive | live smoke sample из PR #77 исключается |
-| `вода` | 15 | 5 | Slovo trimmed archive | live smoke sample из PR #77 исключается |
-| `работать` | 15 | 5 | Slovo trimmed archive | подтвержденный upstream label, не заменен на `работа` |
+| gesture | target train | target validation | materialized train | materialized validation | notes |
+| --- | ---: | ---: | ---: | ---: | --- |
+| `привет` | 15 | 5 | 0 | 0 | label отсутствует в local `annotations.csv`; live smoke sample исключен |
+| `пока` | 15 | 5 | 14 | 5 | upstream spelling `Пока`; один train sample исключен как live smoke |
+| `да` | 15 | 5 | 14 | 5 | один train sample исключен как live smoke |
+| `хорошо` | 15 | 5 | 14 | 5 | один train sample исключен как live smoke |
+| `плохо` | 15 | 5 | 14 | 5 | upstream spelling `Плохо`; один train sample исключен как live smoke |
+| `утро` | 15 | 5 | 15 | 4 | один validation sample исключен как live smoke |
+| `улица` | 15 | 5 | 14 | 5 | один train sample исключен как live smoke |
+| `дом` | 15 | 5 | 14 | 5 | один train sample исключен как live smoke |
+| `вода` | 15 | 5 | 14 | 5 | один train sample исключен как live smoke |
+| `работать` | 15 | 5 | 14 | 5 | upstream label `работать`; один train sample исключен как live smoke |
 
 Дополнительно зафиксирован runtime-required background class:
 
-| class | train count | validation count | source | notes |
-| --- | ---: | ---: | --- | --- |
-| `_no_event` | 10 | 4 | Slovo original/360p non-gesture intervals | требуется current `pose_words` label set; должен быть материализован локально из legal no-hand/pause windows |
+| class | target train | target validation | materialized train | materialized validation | notes |
+| --- | ---: | ---: | ---: | ---: | --- |
+| `_no_event` | 10 | 4 | 0 | 0 | требуется current `pose_words` label set; нужны legal no-hand/pause windows, fake samples не создаются |
 
 ## Dataset split
 
@@ -54,7 +60,42 @@ Validation split:
 
 - нужен, потому что current active classifier labels содержат `_no_event`, а runtime переводит этот label в `no_result`;
 - должен собираться из legal no-hand/pause windows вне annotated gesture intervals;
-- не материализован в Git в этом PR, потому что для честного выделения нужны large original/360p source files.
+- не материализован автоматически из trimmed `slovo.zip`, потому что trimmed clips содержат жесты, а не явные background windows.
+
+## Materialization
+
+Script:
+
+```text
+scripts/materialize_demo_gestures_dataset.py
+```
+
+Рекомендуемый запуск через env:
+
+```bash
+export SLOVO_DATA_ROOT="/Users/mariaburtseva/Documents/проект грант/mvp1/SuperLuchito--SimpleGesture2Letter-Model-Version-2/backend/data/slovo"
+python3 scripts/materialize_demo_gestures_dataset.py --slovo-root "$SLOVO_DATA_ROOT"
+```
+
+Вариант с локальным symlink, если так удобнее для повторных запусков:
+
+```bash
+mkdir -p data/raw
+ln -s "/Users/mariaburtseva/Documents/проект грант/mvp1/SuperLuchito--SimpleGesture2Letter-Model-Version-2/backend/data/slovo" data/raw/slovo
+python3 scripts/materialize_demo_gestures_dataset.py --slovo-root data/raw/slovo
+```
+
+`data/raw/` находится в `.gitignore`; symlink и heavy dataset files не должны попадать в commit.
+
+Output manifest:
+
+```text
+data/demo_gestures/materialized_manifest.json
+```
+
+Materialized manifest содержит только metadata, source paths, `byte_size` и `sha256`. Видео и `slovo.zip` не копируются в clean repo.
+
+Если `Slovo` не распакован, script умеет читать `slovo.zip` напрямую. Если передан unpacked root, script ищет `annotations.csv` и `.mp4` под этим root.
 
 ## Как отделены live smoke samples
 
@@ -64,7 +105,7 @@ Live smoke bundle из PR #77 остается отдельным downstream QA 
 - branch: `feat/DATA-02-QA-04-live-smoke-10-gestures`;
 - manifest: `data/live_samples/manifest.json`.
 
-Все sample IDs из PR #77 перечислены в `manifest.json` в `live_smoke_relation.excluded_sample_ids`. Они не должны использоваться как единственная обучающая база и не должны попадать в train/validation materialization. После MODEL-02 / PW-09 они нужны для честного возврата к `#76` / PR #77.
+Все sample IDs из PR #77 перечислены в `manifest.json` в `live_smoke_relation.excluded_sample_ids`. Script также читает `data/live_samples/manifest.json`, если он есть в checkout-е. Exclusion применяется по `sample_id` и короткому `attachment_id`, поэтому clips из PR #77 не попадают в materialized train/validation rows.
 
 ## Source / License / Attribution
 
@@ -101,13 +142,18 @@ python3 -m pytest tests/test_demo_gestures_dataset_manifest.py
 python3 -m pytest
 ```
 
-Если полный Slovo archive доступен локально, MODEL-02 / PW-09 должен дополнительно проверить materialization против `annotations.csv`, физических `.mp4` файлов, checksums и исключения live smoke sample IDs.
+Проверка на реальном local Slovo:
+
+```bash
+python3 scripts/materialize_demo_gestures_dataset.py \
+  --slovo-root "/Users/mariaburtseva/Documents/проект грант/mvp1/SuperLuchito--SimpleGesture2Letter-Model-Version-2/backend/data/slovo"
+```
 
 ## Ограничения / риски
 
-- Это external-source manifest, а не self-contained dataset archive.
-- Локальный `/Users/mariaburtseva/Documents/проект грант/RSL_slovo` сейчас пуст, поэтому физические train/validation clips не добавлены.
-- Counts в manifest являются target source-group counts для materialization из Slovo annotations; они должны быть подтверждены перед training.
+- Это manifest + metadata, а не self-contained dataset archive.
+- `привет` отсутствует в local `annotations.csv`; единственный known sample `slovo_privet_f17a6060` остается live smoke input и исключен из training.
+- После исключения live smoke clips из PR #77 большинство Slovo-backed gestures имеют 19 usable samples вместо target 20.
 - `_no_event` остается самым слабым классом: он требуется runtime/model pipeline, но legal no-hand/pause windows нужно материализовать отдельно из original/360p source.
 - Возможен domain shift между Slovo train/validation subset и live smoke videos из PR #77.
 - Эта задача разблокирует `MODEL-02 / PW-09`, но сама не обучает active classifier pack и не обновляет `artifacts/runtime/active/pose_words`.

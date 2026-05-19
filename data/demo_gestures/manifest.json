@@ -10,7 +10,8 @@
   "purpose": "Train/validation subset contract for the 10-gesture demo dictionary that unblocks MODEL-02 / PW-09.",
   "self_contained": false,
   "storage_mode": "external_source_manifest",
-  "materialization_status": "requires_local_slovo_archive",
+  "materialization_status": "materialized_with_shortages",
+  "materialized_manifest": "data/demo_gestures/materialized_manifest.json",
   "dataset_root": "data/demo_gestures",
   "source_policy": {
     "large_archives_in_git": false,
@@ -18,7 +19,9 @@
     "no_placeholder_videos": true,
     "notes": [
       "The full Slovo dataset is about 16 GB and is intentionally not committed to this clean repository.",
-      "This manifest records reproducible source groups and split rules; local materialization must validate files against the Slovo archive before MODEL-02 / PW-09 training."
+      "This manifest records reproducible source groups and split rules.",
+      "Local Slovo is available in the old mvp1 project and materialization output is stored in data/demo_gestures/materialized_manifest.json.",
+      "The materialized manifest records shortages separately from target counts; target counts must not be treated as confirmed physical samples."
     ]
   },
   "expected_local_sources": [
@@ -26,7 +29,7 @@
       "source_id": "slovo_trimmed_archive",
       "kind": "archive",
       "expected_env_var": "SLOVO_TRIMMED_ARCHIVE",
-      "default_local_path": "data/external/slovo/slovo.zip",
+      "default_local_path": "/Users/mariaburtseva/Documents/проект грант/mvp1/SuperLuchito--SimpleGesture2Letter-Model-Version-2/backend/data/slovo/slovo.zip",
       "required_for": [
         "gesture_train",
         "gesture_validation"
@@ -42,7 +45,7 @@
       "source_id": "slovo_original_or_360p_archive",
       "kind": "archive",
       "expected_env_var": "SLOVO_ORIGINAL_OR_360P_ARCHIVE",
-      "default_local_path": "data/external/slovo/slovo_full360.zip",
+      "default_local_path": "/Users/mariaburtseva/Documents/проект грант/mvp1/SuperLuchito--SimpleGesture2Letter-Model-Version-2/backend/data/slovo_full360.zip",
       "required_for": [
         "_no_event"
       ],
@@ -91,7 +94,7 @@
     "вода",
     "работать"
   ],
-  "class_counts": {
+  "target_class_counts": {
     "привет": {
       "train": 15,
       "validation": 5,
@@ -146,6 +149,63 @@
       "train": 10,
       "validation": 4,
       "total": 14
+    }
+  },
+  "materialized_class_counts": {
+    "привет": {
+      "train": 0,
+      "validation": 0,
+      "total": 0
+    },
+    "пока": {
+      "train": 14,
+      "validation": 5,
+      "total": 19
+    },
+    "да": {
+      "train": 14,
+      "validation": 5,
+      "total": 19
+    },
+    "хорошо": {
+      "train": 14,
+      "validation": 5,
+      "total": 19
+    },
+    "плохо": {
+      "train": 14,
+      "validation": 5,
+      "total": 19
+    },
+    "утро": {
+      "train": 15,
+      "validation": 4,
+      "total": 19
+    },
+    "улица": {
+      "train": 14,
+      "validation": 5,
+      "total": 19
+    },
+    "дом": {
+      "train": 14,
+      "validation": 5,
+      "total": 19
+    },
+    "вода": {
+      "train": 14,
+      "validation": 5,
+      "total": 19
+    },
+    "работать": {
+      "train": 14,
+      "validation": 5,
+      "total": 19
+    },
+    "_no_event": {
+      "train": 0,
+      "validation": 0,
+      "total": 0
     }
   },
   "classes": [
@@ -378,7 +438,7 @@
       "license_url": "https://creativecommons.org/licenses/by-sa/4.0/",
       "attribution": "Slovo Russian Sign Language Dataset and Models, hukenovs/slovo",
       "modified": true,
-      "modification_notes": "Background windows must be derived locally from allowed non-gesture intervals. They are not committed in this PR because the required source archive is large and unavailable locally.",
+      "modification_notes": "Background windows must be derived locally from allowed non-gesture intervals. They are not fabricated or committed in this PR because trimmed Slovo clips contain gestures rather than explicit background windows.",
       "required_by_runtime": true,
       "runtime_reason": "Current pose_words classifier labels include _no_event and runtime maps that label to no_result."
     }
@@ -403,8 +463,9 @@
     ]
   },
   "known_limitations": [
-    "The full Slovo archive was not available in the local environment; this PR therefore commits a reproducible external-source manifest and report, not video files.",
-    "Class counts are target source-group counts for local materialization from Slovo annotations. They must be physically verified before MODEL-02 / PW-09 training.",
+    "Local Slovo was found in the old mvp1 project and materialized through scripts/materialize_demo_gestures_dataset.py without committing videos or archives.",
+    "The local Slovo annotations do not contain label привет, so the materialized manifest keeps привет at 0 train / 0 validation and records a shortage.",
+    "After excluding PR #77 live smoke clips, most Slovo-backed gestures have 19 usable samples rather than the target 20.",
     "_no_event is required by the current runtime label set but needs legal no-hand/pause windows from original or 360p Slovo sources; no fake background clips are committed.",
     "Domain shift may remain between Slovo train/validation clips and live smoke samples from PR #77.",
     "This task does not train a model, export artifacts, or change decoder thresholds."
