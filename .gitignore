@@ -1,0 +1,14 @@
+# Local Python/runtime outputs
+.venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.cache/
+.pytest_cache/
+
+# Local heavy dataset inputs and materialized video subsets
+data/raw/
+data/slovo/
+data/demo_gestures/videos/
+*.zip
+*.mp4

@@ -1,8 +1,8 @@
-# ART-03 - Active artifact pack для `pose_words`
+# Active artifact pack для `pose_words`
 
-Этот документ фиксирует минимальный active artifact pack, подготовленный для clean repo в рамках ART-03.
+Этот документ фиксирует runtime layout текущего active artifact pack для `pose_words`.
 
-Pack предназначен для runtime-facing проверки `ActiveArtifactLoader` / `ActiveArtifactGate` и не доказывает production-quality распознавание. Он закрывает только наличие, структуру и manifest-compatible layout для classifier + BIO segmentation artifacts.
+Исторически layout был добавлен как ART-03 technical pack. В рамках MODEL-01 / PW-07 pack заменен на lightweight demo classifier для 10 gestures из #78 плюс `_no_event`. Он доказывает runtime loading и минимальный live smoke для demo dictionary, но не является production-quality моделью.
 
 ## Layout
 
@@ -38,31 +38,36 @@ Optional companion files:
 
 В текущем ART-03 pack optional config-файлы добавлены в Git, но loader не требует их физического наличия для `active_artifacts` readiness gate.
 
-## Source mapping из draft repo
+## Source
 
-Источник: `https://github.com/burtsevaM/gesture-recognition-draft`, ветка `burtseva_ma_mvp_words`, active profile `validation_active`.
+Текущий pack генерируется локально из Slovo subset:
 
-| Draft path | Clean path |
-| --- | --- |
-| `backend/artifacts/runtime/active/pose_words/pose_word_model.onnx` | `artifacts/runtime/active/pose_words/classifier/model.onnx` |
-| `backend/artifacts/runtime/active/pose_words/pose_word_labels.txt` | `artifacts/runtime/active/pose_words/classifier/labels.txt` |
-| `backend/artifacts/runtime/active/pose_words/pose_word_config.json` | `artifacts/runtime/active/pose_words/classifier/runtime_config.json` |
-| `backend/artifacts/runtime/active/pose_words/bio_segmenter.onnx` | `artifacts/runtime/active/pose_words/segmentation/model.onnx` |
-| `backend/artifacts/runtime/active/pose_words/bio_thresholds.json` | `artifacts/runtime/active/pose_words/segmentation/thresholds.json` |
-| `backend/artifacts/runtime/active/pose_words/bio_config.json` | `artifacts/runtime/active/pose_words/segmentation/runtime_config.json` |
-| `backend/artifacts/runtime/active/pose_words/pose_words_active_manifest.json` | source context for `manifest.json`, not copied as runtime manifest |
+- config: `configs/demo_gestures_classifier.json`;
+- source manifest: `data/demo_gestures/manifest.json`;
+- materialized manifest: `data/demo_gestures/materialized_manifest.json`;
+- training script: `scripts/train_demo_gestures_classifier.py`;
+- report: `docs/model/model-01-demo-gestures-classifier.md`;
+- machine-readable metrics: `docs/model/model-01-demo-gestures-classifier-results.json`.
 
-Draft config files contained validation-local path fields. Clean `runtime_config.json` files intentionally keep only runtime-facing metadata and shape/model parameters, without draft load roots, absolute paths, `backend/config.yaml`, bootstrap fallback, validation output paths, or machine-local paths.
+The classifier model is a standardized linear ridge ONNX model over MediaPipe `pose_words` feature clips. The segmentation model is a deterministic isolated-gesture ONNX helper for the current one-gesture smoke clips.
 
 ## Labels / class ids
 
-Classifier labels are taken from the draft active labels file without inventing new classes:
+Classifier labels are the final #79 / PR #83 demo dictionary plus `_no_event`:
 
 | id | label |
 | --- | --- |
 | `0` | `_no_event` |
 | `1` | `привет` |
 | `2` | `пока` |
+| `3` | `да` |
+| `4` | `хорошо` |
+| `5` | `плохо` |
+| `6` | `утро` |
+| `7` | `улица` |
+| `8` | `дом` |
+| `9` | `вода` |
+| `10` | `работать` |
 
 The exact runtime label order is stored in `artifacts/runtime/active/pose_words/classifier/labels.txt`.
 
@@ -116,12 +121,25 @@ PY
 - `active_artifacts= True`
 - `reason_codes= []`
 
-Важно: даже при `active_artifacts=true` общий `/ready` в clean repo может оставаться `HTTP 503`, пока `transport_surface=false` и live `WS /ws/stream` pipeline еще не собран.
+Проверить training/export:
+
+```bash
+python3 scripts/train_demo_gestures_classifier.py --config configs/demo_gestures_classifier.json --slovo-root data/slovo
+```
+
+Проверить full live smoke для PR #77 bundle:
+
+```bash
+python3 scripts/run_live_e2e_smoke.py --base-url http://127.0.0.1:8010 --sample-manifest .cache/live_samples_pr77/manifest.json --max-samples 10 --min-passed 8 --http-timeout-seconds 60
+```
+
+Последний зафиксированный результат: `8/10 passed`, см. `docs/qa/model-01-live-smoke.md`.
 
 ## Ограничения
 
-- Pack основан на `synthetic_fixture` technical validation artifacts.
-- Это runtime/technical pack, а не production-quality proof.
-- Pack не добавляет training/export scripts, dataset, validation outputs, backups, bootstrap workflow или draft-only operational logic.
-- Pack не подключает live inference к frontend или WebSocket runtime.
+- Pack обучен на малом Slovo subset и не является production-quality proof.
+- Validation accuracy остается слабой для части классов; `пока` и `утро` не проходят текущий live smoke bundle.
+- Follow-up на улучшение demo classifier до `9/10` или `10/10`: #85.
+- Segmentation artifact рассчитан на isolated one-gesture smoke clips, а не на полноценное boundary detection в длинном live потоке.
+- Pack не добавляет bootstrap workflow, backups или draft-only operational logic.
 - `words` baseline не удаляется и не деактивируется этой задачей.

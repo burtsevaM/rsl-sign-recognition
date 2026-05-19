@@ -1,0 +1,65 @@
+{
+  "schema_version": 1,
+  "config_id": "MODEL-01-PW-07-demo-gestures-classifier-v1",
+  "materialized_manifest": "data/demo_gestures/materialized_manifest.json",
+  "source_manifest": "data/demo_gestures/manifest.json",
+  "slovo_root": "data/slovo",
+  "active_output_root": "artifacts/runtime/active/pose_words",
+  "report_json": "docs/model/model-01-demo-gestures-classifier-results.json",
+  "labels": [
+    "_no_event",
+    "привет",
+    "пока",
+    "да",
+    "хорошо",
+    "плохо",
+    "утро",
+    "улица",
+    "дом",
+    "вода",
+    "работать"
+  ],
+  "feature_extraction": {
+    "clip_frames": 32,
+    "feature_dim": 159,
+    "segment_window": 20,
+    "segment_step": 4,
+    "min_feature_frames": 6,
+    "model_complexity": 1,
+    "min_detection_confidence": 0.35,
+    "min_tracking_confidence": 0.35,
+    "apply_shoulder_norm": true,
+    "hide_legs_before_body": true,
+    "canonical_hands_3d": true,
+    "gesture_requires_hand": true
+  },
+  "training": {
+    "seed": 78,
+    "ridge_alpha": 1.0,
+    "class_weight": "balanced",
+    "target_encoding": "signed_one_vs_rest",
+    "feature_projection": "temporal_summary_mean_std_delta",
+    "logit_scale": 6.0,
+    "windows": [
+      "prefix",
+      "middle",
+      "tail"
+    ]
+  },
+  "segmentation": {
+    "type": "deterministic_isolated_gesture_window",
+    "window_size": 20,
+    "step": 4,
+    "min_segment_len": 1,
+    "thresholds": {
+      "sign": {
+        "th_b": 0.5,
+        "th_o": 0.5
+      },
+      "phrase": {
+        "th_b": 0.5,
+        "th_o": 0.5
+      }
+    }
+  }
+}

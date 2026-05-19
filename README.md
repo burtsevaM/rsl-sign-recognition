@@ -2,7 +2,7 @@
 
 `rsl-sign-recognition` — clean repository для ML-модуля распознавания РЖЯ в сценарии sign-to-text. Его задача — стать местом для воспроизводимого runtime-контура, интеграционного контракта, runtime-facing документации и поэтапной миграции из draft-репозитория в более чистую долгоживущую структуру.
 
-На текущем этапе репозиторий уже содержит **минимальный FastAPI runtime shell** для `/health`, `/ready` и `WS /ws/stream`, транспортное подключение `WS /ws/stream` к live `pose_words` session boundary, слой `PW-05` для pose extraction / normalization / feature composition, изолированный `PW-04` segmentation runtime layer для BIO boundaries поверх feature vectors, изолированный `PW-03` classifier wrapper для `pose_words` feature clips, `ART-02` active artifact manifest reader / loader для clean runtime path, минимальный `ART-03` active artifact pack для `pose_words` и service-level `RT-05` live `pose_words` orchestration boundary. При готовом runtime WebSocket может сериализовать domain-level result в `recognition.result` по contract v1; при недоступном runtime он по-прежнему возвращает controlled `runtime_unavailable`. Репозиторий по-прежнему не содержит production-quality model proof, training/export-кода, operational scripts и утверждения о production-ready live recognition.
+На текущем этапе репозиторий уже содержит **минимальный FastAPI runtime shell** для `/health`, `/ready` и `WS /ws/stream`, транспортное подключение `WS /ws/stream` к live `pose_words` session boundary, слой `PW-05` для pose extraction / normalization / feature composition, изолированный `PW-04` segmentation runtime layer для BIO boundaries поверх feature vectors, изолированный `PW-03` classifier wrapper для `pose_words` feature clips, `ART-02` active artifact manifest reader / loader для clean runtime path, active artifact pack для `pose_words`, service-level `RT-05` live `pose_words` orchestration boundary и воспроизводимый MODEL-01 training/export path для 10 demo gestures. При готовом runtime WebSocket может сериализовать domain-level result в `recognition.result` по contract v1; при недоступном runtime он по-прежнему возвращает controlled `runtime_unavailable`. Репозиторий по-прежнему не содержит production-quality model proof, общего training pipeline для всех сценариев, production operational scripts или утверждения о production-ready live recognition.
 
 ## Что это за репозиторий
 
@@ -77,8 +77,10 @@
 - [docs/runtime-skeleton.md](docs/runtime-skeleton.md) — target module structure
   и границы runtime skeleton для clean repo
 - [docs/artifact-policy.md](docs/artifact-policy.md) — target policy для active runtime artifact manifest, profiles и clean load path
-- [docs/artifacts/pose_words-active-pack.md](docs/artifacts/pose_words-active-pack.md) — ART-03 active artifact pack layout, source mapping, labels/class ids и readiness checks
-- [docs/validation/pose_words-offline-quality.md](docs/validation/pose_words-offline-quality.md) — PW-06 synthetic offline quality validation для active `pose_words` pack
+- [docs/artifacts/pose_words-active-pack.md](docs/artifacts/pose_words-active-pack.md) — active `pose_words` artifact pack layout, labels/class ids и readiness checks
+- [docs/model/model-01-demo-gestures-classifier.md](docs/model/model-01-demo-gestures-classifier.md) — MODEL-01 / PW-07 training report и offline validation для 10 demo gestures
+- [docs/qa/model-01-live-smoke.md](docs/qa/model-01-live-smoke.md) — full и single-sample live smoke evidence для #78
+- [docs/validation/pose_words-offline-quality.md](docs/validation/pose_words-offline-quality.md) — historical PW-06 synthetic offline quality validation для ART-03 `pose_words` pack
 - [docs/qa/live-sample-bundle.md](docs/qa/live-sample-bundle.md) — DATA-02 portable live sample bundle для расширенного QA-04 e2e smoke
 - [docs/qa/qa-04-live-smoke-demo-dictionary.md](docs/qa/qa-04-live-smoke-demo-dictionary.md) — QA-04 demo dictionary и правила честной интерпретации расширенного live smoke
 - [docs/mig-02-runtime-required-migration-governance.md](docs/mig-02-runtime-required-migration-governance.md) — governance guardrails и source-to-target mapping для future runtime-required migration issues
@@ -107,7 +109,7 @@
 - `MIG-02` — controlled migration governance для `PW-05`, `PW-03`, `PW-04` и `ART-02`;
 - `QA-01` и `INT-01` — smoke/integration strategy и handoff notes.
 
-Текущий clean contour ограничен минимальным probe-level shell, изолированным `PW-05` pose feature layer, изолированным `PW-04` segmentation layer, изолированным `PW-03` pose_words classifier wrapper, `ART-02` active artifact loader/readiness gate, `ART-03` минимальным technical active pack, service-level `RT-05` live `pose_words` runtime orchestration boundary и `RT-06` transport wiring для `WS /ws/stream`. Validation workflows, bootstrap/fallback path, training/export, dataset generation, broader artifact lifecycle и machine-local operational runbooks остаются в `gesture-recognition-draft` до отдельных migration tasks.
+Текущий clean contour ограничен минимальным probe-level shell, изолированным `PW-05` pose feature layer, изолированным `PW-04` segmentation layer, изолированным `PW-03` pose_words classifier wrapper, `ART-02` active artifact loader/readiness gate, MODEL-01 demo gestures active pack, service-level `RT-05` live `pose_words` runtime orchestration boundary и `RT-06` transport wiring для `WS /ws/stream`. General-purpose validation workflows, bootstrap/fallback path, broader dataset generation, broader artifact lifecycle и machine-local operational runbooks остаются в `gesture-recognition-draft` до отдельных migration tasks.
 
 ## PW-05 Pose Feature Runtime Layer
 

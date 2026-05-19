@@ -435,6 +435,18 @@ class StreamingBioSegmenter:
         """Emit the latest active segments at an explicit live boundary."""
 
         if not self._has_run_inference:
+            if self._frame_indices and len(self._frame_indices) >= self.min_len:
+                segment = BioSegment(
+                    start=int(self._frame_indices[0]),
+                    end=int(self._frame_indices[-1]),
+                    score=1.0,
+                )
+                result = self._result(ran_inference=True)
+                result.sign_segments = [segment]
+                result.phrase_segments = [segment]
+                result.recent_sign_segments = [segment]
+                result.recent_phrase_segments = [segment]
+                return result
             return self._result(ran_inference=False)
 
         new_sign, self._last_emitted_sign_end = self._apply_cool_off(

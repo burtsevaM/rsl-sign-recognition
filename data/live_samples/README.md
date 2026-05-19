@@ -37,12 +37,12 @@
 
 ```bash
 python3 -m json.tool data/live_samples/manifest.json
-python3 scripts/run_live_e2e_smoke.py --base-url http://127.0.0.1:8000
+python3 scripts/run_live_e2e_smoke.py --base-url http://127.0.0.1:8000 --sample-manifest data/live_samples/manifest.json --max-samples 10 --min-passed 8 --http-timeout-seconds 60
 python3 scripts/run_live_e2e_smoke.py --base-url http://127.0.0.1:8000 --sample-id slovo_privet_f17a6060
 ```
 
-`QA-04` не обучает новую модель. Bundle нужен, чтобы честно показать, какие gestures текущий active runtime/model setup распознает уже сейчас, а какие пока остаются data/model gap.
+`QA-04` не обучает новую модель. Bundle нужен, чтобы честно показать, какие gestures текущий active runtime/model setup распознает уже сейчас, а какие пока остаются live smoke gap.
 
-Текущий полный live smoke на `2026-05-19` дал `1/10 passed`: подтвердился только `привет`; остальные девять samples не дали committed event на текущем active runtime/model setup. До появления active classifier pack для demo dictionary из issue `#78` bundle остается data/QA increment, а не готовым закрытием `#76`.
+Текущий полный live smoke на `2026-05-19` с active MODEL-01 classifier pack дал `8/10 passed` при пороге `--min-passed 8`. Failed samples остаются видимыми: `пока` и `утро` оба committed как `привет`. Это закрывает минимальный acceptance threshold для `#76`, но не является production-quality доказательством качества модели.
 
 Подробное назначение, source mapping, замены слов и smoke-ограничения описаны в [docs/qa/live-sample-bundle.md](../../docs/qa/live-sample-bundle.md).

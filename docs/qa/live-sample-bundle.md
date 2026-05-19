@@ -8,7 +8,7 @@ Bundle нужен не для offline evaluation и не для доказате
 
 `backend -> /ready=200 -> WS /ws/stream -> binary JPEG frames -> recognition.result -> expected label`
 
-`DATA-02` не обучает новую модель. Он расширяет bundle и честно показывает, какие gestures текущий active runtime/model setup уже распознает, а какие пока остаются data/model gap.
+`DATA-02` не обучает новую модель. Он расширяет bundle и честно показывает, какие gestures текущий active runtime/model setup уже распознает, а какие пока остаются live smoke gap.
 
 ## 2. Финальный набор gestures
 
@@ -106,7 +106,7 @@ python3 -m json.tool data/live_samples/manifest.json
 На всем bundle-е:
 
 ```bash
-python3 scripts/run_live_e2e_smoke.py --base-url http://127.0.0.1:8000
+python3 scripts/run_live_e2e_smoke.py --base-url http://127.0.0.1:8000 --sample-manifest data/live_samples/manifest.json --max-samples 10 --min-passed 8 --http-timeout-seconds 60
 ```
 
 На одном sample:
@@ -121,10 +121,10 @@ Runner по умолчанию прогоняет весь bundle, печата�
 
 ## 7. Что ожидать от результата
 
-Текущий active classifier pack содержит только runtime labels `_no_event`, `привет`, `пока`. Поэтому bundle специально шире текущей модели:
+Текущий active MODEL-01 classifier pack содержит `_no_event` и все `10` runtime labels из bundle. Поэтому bundle теперь проверяет не только наличие labels в classifier-е, но и фактическое live e2e поведение на real-video samples:
 
-- `привет` и `пока` проверяют gestures, которые модель вообще умеет выдавать сейчас;
-- остальные samples проверяют demo dictionary и одновременно показывают фактический разрыв между доступными real-video gestures и текущим active model setup.
+- passed samples подтверждают strict condition `committed=true` и `actual_label == expected_label`;
+- failed samples остаются в summary и показывают текущие live confusions.
 
 Если часть samples не распознается:
 
@@ -133,42 +133,43 @@ Runner по умолчанию прогоняет весь bundle, печата�
 3. не трактовать smoke как обучение модели;
 4. открывать отдельные data/model follow-up tasks, если нужен рост покрытия словаря.
 
-Если итог ниже желаемых `8/10`, результат следует оформлять как data investigation, а не как доказательство готового расширенного распознавания.
+Минимальный merge-oriented threshold для `#76` - `8/10 passed`. Если итог ниже `8/10`, результат следует оформлять как data investigation, а не как доказательство готового расширенного распознавания.
 
 ### Фактический smoke result на 2026-05-19
 
 Команда:
 
 ```bash
-python3.11 scripts/run_live_e2e_smoke.py --base-url http://127.0.0.1:8000
+./.venv/bin/python scripts/run_live_e2e_smoke.py --base-url http://127.0.0.1:8000 --sample-manifest data/live_samples/manifest.json --max-samples 10 --min-passed 8 --http-timeout-seconds 60
 ```
 
 | sample_id | expected | actual | result | confidence | committed |
 | --- | --- | --- | --- | --- | --- |
-| `slovo_privet_f17a6060` | `привет` | `привет` | `PASS` | `0.717108` | `true` |
-| `slovo_poka_8ba230dc` | `пока` | `-` | `FAIL` | `-` | `false` |
-| `slovo_da_2b1b2857` | `да` | `-` | `FAIL` | `-` | `false` |
-| `slovo_horosho_43791c91` | `хорошо` | `-` | `FAIL` | `-` | `false` |
-| `slovo_ploho_27560a7e` | `плохо` | `-` | `FAIL` | `-` | `false` |
-| `slovo_utro_c1766b2e` | `утро` | `-` | `FAIL` | `-` | `false` |
-| `slovo_ulica_908f133b` | `улица` | `-` | `FAIL` | `-` | `false` |
-| `slovo_dom_524d6b8f` | `дом` | `-` | `FAIL` | `-` | `false` |
-| `slovo_voda_90db4617` | `вода` | `-` | `FAIL` | `-` | `false` |
-| `slovo_rabotat_ffce2323` | `работать` | `-` | `FAIL` | `-` | `false` |
+| `slovo_privet_f17a6060` | `привет` | `привет` | `PASS` | `0.963399` | `true` |
+| `slovo_poka_8ba230dc` | `пока` | `привет` | `FAIL` | `0.551401` | `true` |
+| `slovo_da_2b1b2857` | `да` | `да` | `PASS` | `0.988729` | `true` |
+| `slovo_horosho_43791c91` | `хорошо` | `хорошо` | `PASS` | `0.978082` | `true` |
+| `slovo_ploho_27560a7e` | `плохо` | `плохо` | `PASS` | `0.926392` | `true` |
+| `slovo_utro_c1766b2e` | `утро` | `привет` | `FAIL` | `0.778988` | `true` |
+| `slovo_ulica_908f133b` | `улица` | `улица` | `PASS` | `0.909317` | `true` |
+| `slovo_dom_524d6b8f` | `дом` | `дом` | `PASS` | `0.351574` | `true` |
+| `slovo_voda_90db4617` | `вода` | `вода` | `PASS` | `0.999998` | `true` |
+| `slovo_rabotat_ffce2323` | `работать` | `работать` | `PASS` | `0.993223` | `true` |
 
-Итог: `1/10 passed`.
+Итог: `8/10 passed`.
 
 Отдельный single-sample прогон:
 
 ```bash
-python3.11 scripts/run_live_e2e_smoke.py \
+./.venv/bin/python scripts/run_live_e2e_smoke.py \
   --base-url http://127.0.0.1:8000 \
+  --sample-manifest data/live_samples/manifest.json \
   --sample-id slovo_privet_f17a6060
 ```
 
 Итог single-sample run: `1/1 passed`.
 
-Фактический результат ниже merge-oriented ориентира `8/10`, поэтому текущий increment нужно трактовать как data investigation: bundle, metadata, runner и документация готовы, но current active runtime/model setup пока не подтверждает demo dictionary beyond `привет`. Полноценное закрытие `#76` остается заблокированным issue `#78`, где должен появиться совместимый active classifier pack для demo dictionary.
+Фактический результат достиг merge-oriented ориентира `8/10`, поэтому DATA-02 / QA-04 может закрывать `#76`. Ограничения остаются честно зафиксированы: `пока` и `утро` проходят через committed event, но распознаются как `привет`, поэтому этот smoke не является production-quality benchmark-ом или доказательством полного качества модели.
 
 ## 8. Что не считается валидной заменой
 
@@ -184,6 +185,6 @@ python3.11 scripts/run_live_e2e_smoke.py \
 ## 9. Ограничения
 
 - Bundle содержит `10` legal samples, но десятый жест использует подтвержденный upstream label `работать`, потому что плановый label `работа` в выбранном source отсутствует.
-- Текущий active model setup остается моделью с двумя word labels, а не новым обученным demo dictionary.
+- Текущий active model setup является lightweight MODEL-01 classifier pack для demo dictionary, а не production-quality моделью.
 - Один live smoke не является benchmark-ом и не заменяет dataset-level evaluation.
-- Расширение набора данных и расширение словаря модели теперь разделены честно: первое сделано здесь, второе требует отдельной model issue `#78`.
+- Расширение набора данных и подключение active classifier pack теперь разделены честно: bundle сделан здесь, MODEL-01 pack подключен через отдельную model issue `#78`.

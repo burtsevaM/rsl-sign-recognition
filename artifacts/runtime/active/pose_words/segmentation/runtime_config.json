@@ -1,25 +1,24 @@
 {
-  "generated_by": "backend/train/export_bio_segmenter_onnx.py",
-  "artifact_kind": "validation",
-  "dataset_kind": "synthetic_fixture",
-  "trained": true,
-  "source_pipeline": "run_pose_words_validation",
+  "generated_by": "scripts/train_demo_gestures_classifier.py",
+  "artifact_kind": "runtime_segmentation",
+  "dataset_kind": "deterministic_isolated_gesture_window",
+  "trained": false,
+  "source_pipeline": "pose_words",
   "input_dim": 159,
-  "window_size": 64,
-  "dynamic_time": true,
-  "model_config": {
-    "hidden_size": 16,
-    "num_layers": 1,
-    "dropout": 0.05,
-    "bidirectional": true
-  },
+  "window_size": 20,
+  "step": 4,
+  "min_segment_len": 1,
   "bio_mapping": {
     "B": 0,
     "I": 1,
     "O": 2
   },
   "norm_flags": {
-    "use_shoulder_norm": false,
-    "use_hands_3d_norm": false
-  }
+    "use_shoulder_norm": true,
+    "use_hands_3d_norm": true
+  },
+  "notes": [
+    "Deterministic isolated-gesture segmenter used to emit a completed segment for one-gesture smoke clips.",
+    "Classifier quality is measured separately on real Slovo validation clips."
+  ]
 }

@@ -1,8 +1,10 @@
 # PW-06 - Offline quality validation для `pose_words`
 
+> Historical note: this PW-06 document describes the previous ART-03 synthetic technical validation pack. The current active pack was replaced in MODEL-01 / PW-07 with the 10-demo-gesture classifier. Current training metrics and active-pack validation are recorded in `docs/model/model-01-demo-gestures-classifier.md`; current live smoke evidence is recorded in `docs/qa/model-01-live-smoke.md`.
+
 ## Scope
 
-Этот документ фиксирует результат PW-06: offline validation текущего active artifact pack для `pose_words` без WebSocket, frontend, live runtime orchestration, training/export и изменения baseline `words`.
+Этот документ фиксирует результат PW-06: offline validation historical ART-03 active artifact pack для `pose_words` без WebSocket, frontend, live runtime orchestration, training/export и изменения baseline `words`.
 
 Проверялся active pack из `artifacts/runtime/active/pose_words/`:
 
