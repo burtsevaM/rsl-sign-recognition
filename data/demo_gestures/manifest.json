@@ -1,0 +1,412 @@
+{
+  "schema_version": 1,
+  "dataset_id": "DATA-03-PW-08-demo-gestures-train-val-subset-v1",
+  "version_date": "2026-05-19",
+  "target_pipeline": "pose_words",
+  "task_codes": [
+    "DATA-03",
+    "PW-08"
+  ],
+  "purpose": "Train/validation subset contract for the 10-gesture demo dictionary that unblocks MODEL-02 / PW-09.",
+  "self_contained": false,
+  "storage_mode": "external_source_manifest",
+  "materialization_status": "requires_local_slovo_archive",
+  "dataset_root": "data/demo_gestures",
+  "source_policy": {
+    "large_archives_in_git": false,
+    "no_fake_samples": true,
+    "no_placeholder_videos": true,
+    "notes": [
+      "The full Slovo dataset is about 16 GB and is intentionally not committed to this clean repository.",
+      "This manifest records reproducible source groups and split rules; local materialization must validate files against the Slovo archive before MODEL-02 / PW-09 training."
+    ]
+  },
+  "expected_local_sources": [
+    {
+      "source_id": "slovo_trimmed_archive",
+      "kind": "archive",
+      "expected_env_var": "SLOVO_TRIMMED_ARCHIVE",
+      "default_local_path": "data/external/slovo/slovo.zip",
+      "required_for": [
+        "gesture_train",
+        "gesture_validation"
+      ],
+      "upstream_url": "https://rndml-team-cv.obs.ru-moscow-1.hc.sbercloud.ru/datasets/slovo/slovo.zip",
+      "expected_contents": [
+        "annotations.csv",
+        "train/*.mp4",
+        "test/*.mp4"
+      ]
+    },
+    {
+      "source_id": "slovo_original_or_360p_archive",
+      "kind": "archive",
+      "expected_env_var": "SLOVO_ORIGINAL_OR_360P_ARCHIVE",
+      "default_local_path": "data/external/slovo/slovo_full360.zip",
+      "required_for": [
+        "_no_event"
+      ],
+      "upstream_url": "https://rndml-team-cv.obs.ru-moscow-1.hc.sbercloud.ru/datasets/slovo/slovo_full360.zip",
+      "expected_contents": [
+        "annotations.csv",
+        "original or resized videos with non-gesture intervals"
+      ]
+    }
+  ],
+  "source": {
+    "source_id": "slovo",
+    "name": "Slovo Russian Sign Language Dataset",
+    "origin": "hukenovs/slovo",
+    "upstream_repository": "https://github.com/hukenovs/slovo",
+    "upstream_dataset_url": "https://rndml-team-cv.obs.ru-moscow-1.hc.sbercloud.ru/datasets/slovo/slovo.zip",
+    "paper": "https://arxiv.org/abs/2305.14527",
+    "license": "CC BY-SA 4.0",
+    "license_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+    "attribution": "Slovo Russian Sign Language Dataset and Models, hukenovs/slovo",
+    "modified": false,
+    "modification_notes": "Dataset content is not modified by this manifest. Future local materialization may copy selected clips under repo-local names only after checksum validation."
+  },
+  "split_policy": {
+    "train": "Use Slovo annotations rows with train=True for the target label, sorted by attachment_id, excluding live smoke samples listed in live_smoke_relation.excluded_sample_ids.",
+    "validation": "Use Slovo annotations rows with train=False for the target label, sorted by attachment_id, excluding live smoke samples listed in live_smoke_relation.excluded_sample_ids.",
+    "target_counts_per_gesture": {
+      "train": 15,
+      "validation": 5
+    },
+    "weak_class_threshold": {
+      "train": 10,
+      "validation": 3
+    },
+    "label_normalization": "Only whitespace trim and lowercase for Slovo labels that differ only by capitalization, such as Пока and Плохо. Labels must not be manually remapped to a different word."
+  },
+  "final_demo_dictionary": [
+    "привет",
+    "пока",
+    "да",
+    "хорошо",
+    "плохо",
+    "утро",
+    "улица",
+    "дом",
+    "вода",
+    "работать"
+  ],
+  "class_counts": {
+    "привет": {
+      "train": 15,
+      "validation": 5,
+      "total": 20
+    },
+    "пока": {
+      "train": 15,
+      "validation": 5,
+      "total": 20
+    },
+    "да": {
+      "train": 15,
+      "validation": 5,
+      "total": 20
+    },
+    "хорошо": {
+      "train": 15,
+      "validation": 5,
+      "total": 20
+    },
+    "плохо": {
+      "train": 15,
+      "validation": 5,
+      "total": 20
+    },
+    "утро": {
+      "train": 15,
+      "validation": 5,
+      "total": 20
+    },
+    "улица": {
+      "train": 15,
+      "validation": 5,
+      "total": 20
+    },
+    "дом": {
+      "train": 15,
+      "validation": 5,
+      "total": 20
+    },
+    "вода": {
+      "train": 15,
+      "validation": 5,
+      "total": 20
+    },
+    "работать": {
+      "train": 15,
+      "validation": 5,
+      "total": 20
+    },
+    "_no_event": {
+      "train": 10,
+      "validation": 4,
+      "total": 14
+    }
+  },
+  "classes": [
+    {
+      "label": "привет",
+      "role": "gesture",
+      "source": "slovo",
+      "upstream_label": "привет",
+      "train": {
+        "count": 15,
+        "source_group_id": "slovo_privet_train",
+        "selection_rule": "Slovo annotations text == привет and train == True; sort by attachment_id; exclude slovo_privet_f17a6060 if present."
+      },
+      "validation": {
+        "count": 5,
+        "source_group_id": "slovo_privet_validation",
+        "selection_rule": "Slovo annotations text == привет and train == False; sort by attachment_id; exclude slovo_privet_f17a6060 if present."
+      },
+      "license": "CC BY-SA 4.0",
+      "license_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+      "attribution": "Slovo Russian Sign Language Dataset and Models, hukenovs/slovo",
+      "modified": false,
+      "modification_notes": "No content modification in this manifest."
+    },
+    {
+      "label": "пока",
+      "role": "gesture",
+      "source": "slovo",
+      "upstream_label": "Пока",
+      "train": {
+        "count": 15,
+        "source_group_id": "slovo_poka_train",
+        "selection_rule": "Slovo annotations lowercase(text) == пока and train == True; sort by attachment_id; exclude slovo_poka_8ba230dc if present."
+      },
+      "validation": {
+        "count": 5,
+        "source_group_id": "slovo_poka_validation",
+        "selection_rule": "Slovo annotations lowercase(text) == пока and train == False; sort by attachment_id; exclude slovo_poka_8ba230dc if present."
+      },
+      "license": "CC BY-SA 4.0",
+      "license_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+      "attribution": "Slovo Russian Sign Language Dataset and Models, hukenovs/slovo",
+      "modified": false,
+      "modification_notes": "Runtime label stores lowercase form; upstream spelling is retained."
+    },
+    {
+      "label": "да",
+      "role": "gesture",
+      "source": "slovo",
+      "upstream_label": "да",
+      "train": {
+        "count": 15,
+        "source_group_id": "slovo_da_train",
+        "selection_rule": "Slovo annotations text == да and train == True; sort by attachment_id; exclude slovo_da_2b1b2857 if present."
+      },
+      "validation": {
+        "count": 5,
+        "source_group_id": "slovo_da_validation",
+        "selection_rule": "Slovo annotations text == да and train == False; sort by attachment_id; exclude slovo_da_2b1b2857 if present."
+      },
+      "license": "CC BY-SA 4.0",
+      "license_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+      "attribution": "Slovo Russian Sign Language Dataset and Models, hukenovs/slovo",
+      "modified": false,
+      "modification_notes": "No content modification in this manifest."
+    },
+    {
+      "label": "хорошо",
+      "role": "gesture",
+      "source": "slovo",
+      "upstream_label": "хорошо",
+      "train": {
+        "count": 15,
+        "source_group_id": "slovo_horosho_train",
+        "selection_rule": "Slovo annotations text == хорошо and train == True; sort by attachment_id; exclude slovo_horosho_43791c91 if present."
+      },
+      "validation": {
+        "count": 5,
+        "source_group_id": "slovo_horosho_validation",
+        "selection_rule": "Slovo annotations text == хорошо and train == False; sort by attachment_id; exclude slovo_horosho_43791c91 if present."
+      },
+      "license": "CC BY-SA 4.0",
+      "license_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+      "attribution": "Slovo Russian Sign Language Dataset and Models, hukenovs/slovo",
+      "modified": false,
+      "modification_notes": "No content modification in this manifest."
+    },
+    {
+      "label": "плохо",
+      "role": "gesture",
+      "source": "slovo",
+      "upstream_label": "Плохо",
+      "train": {
+        "count": 15,
+        "source_group_id": "slovo_ploho_train",
+        "selection_rule": "Slovo annotations lowercase(text) == плохо and train == True; sort by attachment_id; exclude slovo_ploho_27560a7e if present."
+      },
+      "validation": {
+        "count": 5,
+        "source_group_id": "slovo_ploho_validation",
+        "selection_rule": "Slovo annotations lowercase(text) == плохо and train == False; sort by attachment_id; exclude slovo_ploho_27560a7e if present."
+      },
+      "license": "CC BY-SA 4.0",
+      "license_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+      "attribution": "Slovo Russian Sign Language Dataset and Models, hukenovs/slovo",
+      "modified": false,
+      "modification_notes": "Runtime label stores lowercase form; upstream spelling is retained."
+    },
+    {
+      "label": "утро",
+      "role": "gesture",
+      "source": "slovo",
+      "upstream_label": "утро",
+      "train": {
+        "count": 15,
+        "source_group_id": "slovo_utro_train",
+        "selection_rule": "Slovo annotations text == утро and train == True; sort by attachment_id; exclude slovo_utro_c1766b2e if present."
+      },
+      "validation": {
+        "count": 5,
+        "source_group_id": "slovo_utro_validation",
+        "selection_rule": "Slovo annotations text == утро and train == False; sort by attachment_id; exclude slovo_utro_c1766b2e if present."
+      },
+      "license": "CC BY-SA 4.0",
+      "license_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+      "attribution": "Slovo Russian Sign Language Dataset and Models, hukenovs/slovo",
+      "modified": false,
+      "modification_notes": "No content modification in this manifest."
+    },
+    {
+      "label": "улица",
+      "role": "gesture",
+      "source": "slovo",
+      "upstream_label": "улица",
+      "train": {
+        "count": 15,
+        "source_group_id": "slovo_ulica_train",
+        "selection_rule": "Slovo annotations text == улица and train == True; sort by attachment_id; exclude slovo_ulica_908f133b if present."
+      },
+      "validation": {
+        "count": 5,
+        "source_group_id": "slovo_ulica_validation",
+        "selection_rule": "Slovo annotations text == улица and train == False; sort by attachment_id; exclude slovo_ulica_908f133b if present."
+      },
+      "license": "CC BY-SA 4.0",
+      "license_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+      "attribution": "Slovo Russian Sign Language Dataset and Models, hukenovs/slovo",
+      "modified": false,
+      "modification_notes": "No content modification in this manifest."
+    },
+    {
+      "label": "дом",
+      "role": "gesture",
+      "source": "slovo",
+      "upstream_label": "дом",
+      "train": {
+        "count": 15,
+        "source_group_id": "slovo_dom_train",
+        "selection_rule": "Slovo annotations text == дом and train == True; sort by attachment_id; exclude slovo_dom_524d6b8f if present."
+      },
+      "validation": {
+        "count": 5,
+        "source_group_id": "slovo_dom_validation",
+        "selection_rule": "Slovo annotations text == дом and train == False; sort by attachment_id; exclude slovo_dom_524d6b8f if present."
+      },
+      "license": "CC BY-SA 4.0",
+      "license_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+      "attribution": "Slovo Russian Sign Language Dataset and Models, hukenovs/slovo",
+      "modified": false,
+      "modification_notes": "No content modification in this manifest."
+    },
+    {
+      "label": "вода",
+      "role": "gesture",
+      "source": "slovo",
+      "upstream_label": "вода",
+      "train": {
+        "count": 15,
+        "source_group_id": "slovo_voda_train",
+        "selection_rule": "Slovo annotations text == вода and train == True; sort by attachment_id; exclude slovo_voda_90db4617 if present."
+      },
+      "validation": {
+        "count": 5,
+        "source_group_id": "slovo_voda_validation",
+        "selection_rule": "Slovo annotations text == вода and train == False; sort by attachment_id; exclude slovo_voda_90db4617 if present."
+      },
+      "license": "CC BY-SA 4.0",
+      "license_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+      "attribution": "Slovo Russian Sign Language Dataset and Models, hukenovs/slovo",
+      "modified": false,
+      "modification_notes": "No content modification in this manifest."
+    },
+    {
+      "label": "работать",
+      "role": "gesture",
+      "source": "slovo",
+      "upstream_label": "работать",
+      "train": {
+        "count": 15,
+        "source_group_id": "slovo_rabotat_train",
+        "selection_rule": "Slovo annotations text == работать and train == True; sort by attachment_id; exclude slovo_rabotat_ffce2323 if present."
+      },
+      "validation": {
+        "count": 5,
+        "source_group_id": "slovo_rabotat_validation",
+        "selection_rule": "Slovo annotations text == работать and train == False; sort by attachment_id; exclude slovo_rabotat_ffce2323 if present."
+      },
+      "license": "CC BY-SA 4.0",
+      "license_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+      "attribution": "Slovo Russian Sign Language Dataset and Models, hukenovs/slovo",
+      "modified": false,
+      "modification_notes": "The label is the confirmed upstream word работать, not a manual remap from работа."
+    },
+    {
+      "label": "_no_event",
+      "role": "background",
+      "source": "slovo_original_or_360p_archive",
+      "upstream_label": null,
+      "train": {
+        "count": 10,
+        "source_group_id": "slovo_no_event_train",
+        "selection_rule": "Select no-hand or pause windows outside annotated gesture intervals from legal Slovo original/360p videos; exclude any windows overlapping final_demo_dictionary gesture intervals."
+      },
+      "validation": {
+        "count": 4,
+        "source_group_id": "slovo_no_event_validation",
+        "selection_rule": "Use held-out users or train=False source videos for no-hand/pause windows; exclude live smoke videos and any gesture intervals."
+      },
+      "license": "CC BY-SA 4.0",
+      "license_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+      "attribution": "Slovo Russian Sign Language Dataset and Models, hukenovs/slovo",
+      "modified": true,
+      "modification_notes": "Background windows must be derived locally from allowed non-gesture intervals. They are not committed in this PR because the required source archive is large and unavailable locally.",
+      "required_by_runtime": true,
+      "runtime_reason": "Current pose_words classifier labels include _no_event and runtime maps that label to no_result."
+    }
+  ],
+  "live_smoke_relation": {
+    "pr_number": 77,
+    "pr_url": "https://github.com/burtsevaM/rsl-sign-recognition/pull/77",
+    "branch": "feat/DATA-02-QA-04-live-smoke-10-gestures",
+    "bundle_manifest": "data/live_samples/manifest.json",
+    "relationship": "Live smoke samples are excluded from train/validation materialization and are reserved as downstream e2e smoke inputs.",
+    "excluded_sample_ids": [
+      "slovo_privet_f17a6060",
+      "slovo_poka_8ba230dc",
+      "slovo_da_2b1b2857",
+      "slovo_horosho_43791c91",
+      "slovo_ploho_27560a7e",
+      "slovo_utro_c1766b2e",
+      "slovo_ulica_908f133b",
+      "slovo_dom_524d6b8f",
+      "slovo_voda_90db4617",
+      "slovo_rabotat_ffce2323"
+    ]
+  },
+  "known_limitations": [
+    "The full Slovo archive was not available in the local environment; this PR therefore commits a reproducible external-source manifest and report, not video files.",
+    "Class counts are target source-group counts for local materialization from Slovo annotations. They must be physically verified before MODEL-02 / PW-09 training.",
+    "_no_event is required by the current runtime label set but needs legal no-hand/pause windows from original or 360p Slovo sources; no fake background clips are committed.",
+    "Domain shift may remain between Slovo train/validation clips and live smoke samples from PR #77.",
+    "This task does not train a model, export artifacts, or change decoder thresholds."
+  ]
+}
