@@ -69,18 +69,18 @@ Runner должен явно печатать:
 
 | sample_id | expected | actual | result | confidence | committed |
 | --- | --- | --- | --- | --- | --- |
-| `slovo_privet_f17a6060` | `привет` | `привет` | `PASS` | `0.963399` | `true` |
-| `slovo_poka_8ba230dc` | `пока` | `привет` | `FAIL` | `0.551401` | `true` |
-| `slovo_da_2b1b2857` | `да` | `да` | `PASS` | `0.988729` | `true` |
-| `slovo_horosho_43791c91` | `хорошо` | `хорошо` | `PASS` | `0.978082` | `true` |
-| `slovo_ploho_27560a7e` | `плохо` | `плохо` | `PASS` | `0.926392` | `true` |
-| `slovo_utro_c1766b2e` | `утро` | `привет` | `FAIL` | `0.778988` | `true` |
-| `slovo_ulica_908f133b` | `улица` | `улица` | `PASS` | `0.909317` | `true` |
-| `slovo_dom_524d6b8f` | `дом` | `дом` | `PASS` | `0.351574` | `true` |
-| `slovo_voda_90db4617` | `вода` | `вода` | `PASS` | `0.999998` | `true` |
-| `slovo_rabotat_ffce2323` | `работать` | `работать` | `PASS` | `0.993223` | `true` |
+| `slovo_privet_f17a6060` | `привет` | `привет` | `PASS` | `0.938670` | `true` |
+| `slovo_poka_8ba230dc` | `пока` | `пока` | `PASS` | `0.467108` | `true` |
+| `slovo_da_2b1b2857` | `да` | `да` | `PASS` | `0.941735` | `true` |
+| `slovo_horosho_43791c91` | `хорошо` | `хорошо` | `PASS` | `0.978893` | `true` |
+| `slovo_ploho_27560a7e` | `плохо` | `плохо` | `PASS` | `0.991616` | `true` |
+| `slovo_utro_c1766b2e` | `утро` | `дом` | `FAIL` | `0.799179` | `true` |
+| `slovo_ulica_908f133b` | `улица` | `улица` | `PASS` | `0.875830` | `true` |
+| `slovo_dom_524d6b8f` | `дом` | `дом` | `PASS` | `0.295213` | `true` |
+| `slovo_voda_90db4617` | `вода` | `вода` | `PASS` | `0.999952` | `true` |
+| `slovo_rabotat_ffce2323` | `работать` | `работать` | `PASS` | `0.991799` | `true` |
 
-Summary полного runner-а: `8/10 passed`.
+Summary полного runner-а: `9/10 passed`.
 
 Команда полного прогона:
 
@@ -105,3 +105,5 @@ Summary полного runner-а: `8/10 passed`.
 2. Не удалять failed samples из bundle только ради красивого summary.
 3. Не заменять реальные clips synthetic/placeholder input-ом.
 4. Если результат остается не ниже `8/10`, `#76` можно закрывать через `Closes`, но слабые samples нужно оставить в документации и follow-up notes.
+
+Текущий оставшийся failed sample после MODEL-01 quality pass: `утро` committed как `дом`. Предыдущий fail `пока -> привет` исправлен без удаления sample и без ослабления pass criteria.

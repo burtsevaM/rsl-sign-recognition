@@ -133,13 +133,13 @@ python3 scripts/train_demo_gestures_classifier.py --config configs/demo_gestures
 python3 scripts/run_live_e2e_smoke.py --base-url http://127.0.0.1:8010 --sample-manifest .cache/live_samples_pr77/manifest.json --max-samples 10 --min-passed 8 --http-timeout-seconds 60
 ```
 
-Последний зафиксированный результат: `8/10 passed`, см. `docs/qa/model-01-live-smoke.md`.
+Последний зафиксированный результат: `9/10 passed`, см. `docs/qa/model-01-live-smoke.md`.
 
 ## Ограничения
 
 - Pack обучен на малом Slovo subset и не является production-quality proof.
-- Validation accuracy остается слабой для части классов; `пока` и `утро` не проходят текущий live smoke bundle.
-- Follow-up на улучшение demo classifier до `9/10` или `10/10`: #85.
+- Validation accuracy остается слабой для части классов; `утро` не проходит текущий live smoke bundle.
+- Follow-up на улучшение demo classifier до `10/10`: #85.
 - Segmentation artifact рассчитан на isolated one-gesture smoke clips, а не на полноценное boundary detection в длинном live потоке.
 - Pack не добавляет bootstrap workflow, backups или draft-only operational logic.
 - `words` baseline не удаляется и не деактивируется этой задачей.

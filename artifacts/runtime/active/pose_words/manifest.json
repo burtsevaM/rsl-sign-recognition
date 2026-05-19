@@ -41,7 +41,7 @@
       "required": true,
       "trained": true,
       "size_bytes": 25855,
-      "sha256": "cc09bdba1bc29666a2f09992c24c736b7cc832e56e2be767f018b013c95a4e2a"
+      "sha256": "74bf079a903e782bafebc8e333e2bf4507027d631fdd09cad5801b7a8fb70645"
     },
     "classifier_labels": {
       "relative_path": "classifier/labels.txt",
@@ -67,8 +67,8 @@
       "artifact_kind": "model",
       "required": true,
       "trained": false,
-      "size_bytes": 815,
-      "sha256": "2d79af54e10ae38c158a7ace3a83effce0e311b5a9ca8e75a96050ff517a1c4b"
+      "size_bytes": 767,
+      "sha256": "d356f81054cb38d0b5ddcc89861bd0e64637b4fd5c169264da1f3010dbda6bb9"
     },
     "segmentation_thresholds": {
       "relative_path": "segmentation/thresholds.json",
@@ -86,7 +86,7 @@
       "required": false,
       "trained": false,
       "size_bytes": 652,
-      "sha256": "cfdf592e15b562f8dc23c7a69a2c730f4b9bb9ca233fce4ef965b67cb96eafeb"
+      "sha256": "014d13587a464a2eb229380c8cc749edeb0db1deeae137287fa78bd8b8323c28"
     }
   }
 }

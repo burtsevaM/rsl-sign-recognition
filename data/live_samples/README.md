@@ -43,6 +43,6 @@ python3 scripts/run_live_e2e_smoke.py --base-url http://127.0.0.1:8000 --sample-
 
 `QA-04` не обучает новую модель. Bundle нужен, чтобы честно показать, какие gestures текущий active runtime/model setup распознает уже сейчас, а какие пока остаются live smoke gap.
 
-Текущий полный live smoke на `2026-05-19` с active MODEL-01 classifier pack дал `8/10 passed` при пороге `--min-passed 8`. Failed samples остаются видимыми: `пока` и `утро` оба committed как `привет`. Это закрывает минимальный acceptance threshold для `#76`, но не является production-quality доказательством качества модели.
+Текущий полный live smoke на `2026-05-19` с active MODEL-01 classifier pack дал `9/10 passed` при пороге `--min-passed 8`. Failed sample остается видимым: `утро` committed как `дом`. Это превышает минимальный acceptance threshold для `#76`, но не является production-quality доказательством качества модели.
 
 Подробное назначение, source mapping, замены слов и smoke-ограничения описаны в [docs/qa/live-sample-bundle.md](../../docs/qa/live-sample-bundle.md).

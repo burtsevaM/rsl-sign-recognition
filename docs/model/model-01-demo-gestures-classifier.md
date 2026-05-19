@@ -67,7 +67,7 @@ Model:
 - classifier: standardized linear ridge classifier exported to ONNX;
 - class weighting: balanced;
 - `ridge_alpha=1.0`, `logit_scale=6.0`;
-- segmentation artifact: deterministic isolated-gesture segmenter for one-gesture smoke clips, `window_size=20`, `step=4`.
+- segmentation artifact: deterministic isolated-gesture segmenter for one-gesture smoke clips, `window_size=18`, `step=4`.
 
 Rejected records after feature extraction:
 
@@ -82,25 +82,25 @@ Rejected records after feature extraction:
 Overall:
 
 - train accuracy: `1.000000` on 447 prepared train windows;
-- validation accuracy: `0.653846` on 52 prepared validation windows.
+- validation accuracy: `0.673077` on 52 prepared validation windows.
 
 Validation metrics:
 
 | label | precision | recall | f1 | validation count | notes |
 | --- | ---: | ---: | ---: | ---: | --- |
-| `_no_event` | 0.571429 | 1.000000 | 0.727273 | 4 | background only |
-| `привет` | 0.200000 | 0.200000 | 0.200000 | 5 | weak |
-| `пока` | 0.666667 | 0.800000 | 0.727273 | 5 | weak |
-| `да` | 0.666667 | 0.400000 | 0.500000 | 5 | weak |
-| `хорошо` | 1.000000 | 0.400000 | 0.571429 | 5 | weak recall |
+| `_no_event` | 0.666667 | 1.000000 | 0.800000 | 4 | background only |
+| `привет` | 0.666667 | 0.400000 | 0.500000 | 5 | weak |
+| `пока` | 0.571429 | 0.800000 | 0.666667 | 5 | weak |
+| `да` | 0.500000 | 0.200000 | 0.285714 | 5 | weak |
+| `хорошо` | 1.000000 | 0.600000 | 0.750000 | 5 | weak recall |
 | `плохо` | 1.000000 | 1.000000 | 1.000000 | 5 | strongest validation class |
-| `утро` | 0.400000 | 0.500000 | 0.444444 | 4 | weak |
+| `утро` | 0.333333 | 0.500000 | 0.400000 | 4 | weak |
 | `улица` | 0.666667 | 0.800000 | 0.727273 | 5 | weak |
 | `дом` | 1.000000 | 0.750000 | 0.857143 | 4 | validation shortage |
-| `вода` | 0.600000 | 0.600000 | 0.600000 | 5 | weak |
-| `работать` | 0.800000 | 0.800000 | 0.800000 | 5 | weak |
+| `вода` | 0.750000 | 0.600000 | 0.666667 | 5 | weak |
+| `работать` | 0.571429 | 0.800000 | 0.666667 | 5 | weak |
 
-Weak classes are not hidden. The weakest validation classes are `привет`, `утро`, `да`, `хорошо`, and `вода`. Full failed validation cases and confusion matrix are in `docs/model/model-01-demo-gestures-classifier-results.json`.
+Weak classes are not hidden. The weakest validation classes are `да`, `утро`, `привет`, `пока`, `вода`, and `работать`. Full failed validation cases and confusion matrix are in `docs/model/model-01-demo-gestures-classifier-results.json`.
 
 Baseline comparison: the previous active pack knew only `_no_event`, `привет`, and `пока`, so it could not satisfy #78 for the 10-gesture smoke bundle. The new pack contains all required runtime labels and is loaded by `LivePoseWordsRuntimeService`.
 
@@ -108,12 +108,12 @@ Baseline comparison: the previous active pack knew only `_no_event`, `приве
 
 | artifact | path | size | sha256 |
 | --- | --- | ---: | --- |
-| classifier model | `artifacts/runtime/active/pose_words/classifier/model.onnx` | 25855 | `cc09bdba1bc29666a2f09992c24c736b7cc832e56e2be767f018b013c95a4e2a` |
+| classifier model | `artifacts/runtime/active/pose_words/classifier/model.onnx` | 25855 | `74bf079a903e782bafebc8e333e2bf4507027d631fdd09cad5801b7a8fb70645` |
 | labels | `artifacts/runtime/active/pose_words/classifier/labels.txt` | 114 | `4a396fadf60f00e6f58ad7a3dafa49ae05fc1c93e039dec12b2cce59df76635f` |
 | classifier config | `artifacts/runtime/active/pose_words/classifier/runtime_config.json` | 929 | `3d7413035aed77f5b7dc04fc2bd0657b406f67e7cd0925c5beb86c7bad22dbbe` |
-| segmentation model | `artifacts/runtime/active/pose_words/segmentation/model.onnx` | 815 | `2d79af54e10ae38c158a7ace3a83effce0e311b5a9ca8e75a96050ff517a1c4b` |
+| segmentation model | `artifacts/runtime/active/pose_words/segmentation/model.onnx` | 767 | `d356f81054cb38d0b5ddcc89861bd0e64637b4fd5c169264da1f3010dbda6bb9` |
 | thresholds | `artifacts/runtime/active/pose_words/segmentation/thresholds.json` | 382 | `ea5bd4b3b3386b0666ca9e58442a37da4760ac9de142bfd37f8a92abedf17cf0` |
-| segmentation config | `artifacts/runtime/active/pose_words/segmentation/runtime_config.json` | 652 | `cfdf592e15b562f8dc23c7a69a2c730f4b9bb9ca233fce4ef965b67cb96eafeb` |
+| segmentation config | `artifacts/runtime/active/pose_words/segmentation/runtime_config.json` | 652 | `014d13587a464a2eb229380c8cc749edeb0db1deeae137287fa78bd8b8323c28` |
 
 The artifact files are lightweight and committed in the existing active runtime layout. The Slovo archive and cache are not committed.
 
@@ -131,7 +131,7 @@ Runtime loads the new active pack through `artifacts/runtime/active/pose_words/m
 ## Limitations
 
 - Small dataset: most gesture classes have only 19 materialized records after live-smoke exclusions.
-- Validation accuracy is modest; `привет` and `утро` remain weak offline/live classes.
-- Follow-up for improving demo classifier quality to `9/10` or `10/10` live smoke: #85.
+- Validation accuracy is modest; `утро` remains a weak offline/live class.
+- Follow-up for improving demo classifier quality from `9/10` to `10/10` live smoke: #85.
 - The segmentation artifact is deterministic for isolated one-gesture clips and is not a production sign boundary model.
 - This closes the active classifier pack gap for #78; broader QA around #76 / PR #77 should still update downstream smoke ownership separately.
