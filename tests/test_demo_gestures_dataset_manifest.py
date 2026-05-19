@@ -6,6 +6,7 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 MANIFEST_PATH = REPO_ROOT / "data/demo_gestures/manifest.json"
+MATERIALIZED_MANIFEST_PATH = REPO_ROOT / "data/demo_gestures/materialized_manifest.json"
 
 EXPECTED_GESTURES = [
     "привет",
@@ -36,6 +37,10 @@ EXPECTED_LIVE_SMOKE_SAMPLE_IDS = {
 
 def load_manifest() -> dict[str, object]:
     return json.loads(MANIFEST_PATH.read_text(encoding="utf-8"))
+
+
+def load_materialized_manifest() -> dict[str, object]:
+    return json.loads(MATERIALIZED_MANIFEST_PATH.read_text(encoding="utf-8"))
 
 
 def test_demo_gestures_manifest_is_external_source_contract() -> None:
@@ -114,8 +119,9 @@ def test_no_event_class_is_declared_with_limitations() -> None:
     }
     assert no_event["role"] == "background"
     assert no_event["required_by_runtime"] is True
-    assert no_event["modified"] is True
-    assert "Background windows" in no_event["modification_notes"]
+    assert no_event["modified"] is False
+    assert no_event["upstream_label"] == "no_event"
+    assert "No dummy" in no_event["modification_notes"]
 
 
 def test_live_smoke_samples_are_explicitly_excluded_from_train_val() -> None:
@@ -148,12 +154,8 @@ def test_source_and_expected_local_paths_are_recorded() -> None:
     assert source["license"] == "CC BY-SA 4.0"
     assert source["modified"] is False
 
-    assert set(expected_sources) == {
-        "slovo_trimmed_archive",
-        "slovo_original_or_360p_archive",
-    }
+    assert set(expected_sources) == {"slovo_trimmed_archive"}
     assert expected_sources["slovo_trimmed_archive"]["expected_env_var"] == "SLOVO_TRIMMED_ARCHIVE"
-    assert expected_sources["slovo_original_or_360p_archive"]["expected_env_var"] == "SLOVO_ORIGINAL_OR_360P_ARCHIVE"
     assert "mvp1/SuperLuchito--SimpleGesture2Letter-Model-Version-2" in expected_sources["slovo_trimmed_archive"]["default_local_path"]
 
 
@@ -162,9 +164,9 @@ def test_materialized_counts_are_not_confused_with_targets() -> None:
     counts = manifest["materialized_class_counts"]
 
     assert counts["привет"] == {
-        "train": 0,
-        "validation": 0,
-        "total": 0,
+        "train": 14,
+        "validation": 5,
+        "total": 19,
     }
     assert counts["пока"] == {
         "train": 14,
@@ -177,7 +179,79 @@ def test_materialized_counts_are_not_confused_with_targets() -> None:
         "total": 19,
     }
     assert counts["_no_event"] == {
-        "train": 0,
-        "validation": 0,
-        "total": 0,
+        "train": 10,
+        "validation": 4,
+        "total": 14,
     }
+
+
+def test_materialized_manifest_has_all_final_classes_with_non_zero_splits() -> None:
+    source_manifest = load_manifest()
+    materialized = load_materialized_manifest()
+    counts = materialized["materialized_counts"]
+    statuses = materialized["class_status"]
+
+    assert materialized["target_gestures"] == EXPECTED_GESTURES
+    assert "_no_event" in counts
+    for label in [*EXPECTED_GESTURES, "_no_event"]:
+        assert label in counts
+        assert label in statuses
+        assert counts[label]["train"] > 0, label
+        assert counts[label]["validation"] > 0, label
+        assert statuses[label]["status"] in {"ok", "shortage"}
+        assert statuses[label]["materialized_train"] == counts[label]["train"]
+        assert statuses[label]["materialized_validation"] == counts[label]["validation"]
+    assert materialized["issue_closure_ready"] is True
+    assert source_manifest["materialization_status"] == "materialized_with_shortages"
+
+
+def test_materialized_sample_records_are_traceable_and_exclude_live_smoke() -> None:
+    materialized = load_materialized_manifest()
+    samples = materialized["samples"]
+    sample_ids = {
+        sample["sample_id"]
+        for sample in samples
+    }
+
+    assert EXPECTED_LIVE_SMOKE_SAMPLE_IDS.isdisjoint(sample_ids)
+    for sample in samples:
+        for field in (
+            "sample_id",
+            "sha256",
+            "byte_size",
+            "split",
+            "label",
+            "source",
+            "source_label",
+            "source_path",
+        ):
+            assert field in sample, sample
+        assert sample["split"] in {"train", "validation"}
+        assert isinstance(sample["byte_size"], int)
+        assert sample["byte_size"] > 0
+        assert isinstance(sample["sha256"], str)
+        assert len(sample["sha256"]) == 64
+        assert sample["source"] == "slovo"
+
+
+def test_materialized_manifest_records_explicit_aliases_without_silent_remap() -> None:
+    materialized = load_materialized_manifest()
+    aliases = materialized["label_canonicalization"]["aliases"]
+    samples = materialized["samples"]
+
+    assert aliases == {
+        "привет!": "привет",
+        "no_event": "_no_event",
+    }
+    assert any(
+        sample["label"] == "привет" and sample["source_label"] == "Привет!"
+        for sample in samples
+    )
+    assert any(
+        sample["label"] == "_no_event" and sample["source_label"] == "no_event"
+        for sample in samples
+    )
+    assert all(
+        not (sample["label"] == "работать" and sample["source_label"].lower() == "работа")
+        for sample in samples
+    )

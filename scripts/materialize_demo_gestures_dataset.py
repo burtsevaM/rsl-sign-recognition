@@ -44,6 +44,11 @@ TARGET_COUNTS = {
     "train": 15,
     "validation": 5,
 }
+NO_EVENT_LABEL = "_no_event"
+NO_EVENT_TARGET_COUNTS = {
+    "train": 10,
+    "validation": 4,
+}
 SLOVO_SLUGS = {
     "привет": "privet",
     "пока": "poka",
@@ -55,6 +60,11 @@ SLOVO_SLUGS = {
     "дом": "dom",
     "вода": "voda",
     "работать": "rabotat",
+    NO_EVENT_LABEL: "no_event",
+}
+SLOVO_LABEL_ALIASES = {
+    "привет!": "привет",
+    "no_event": NO_EVENT_LABEL,
 }
 
 
@@ -70,6 +80,7 @@ class SlovoSource:
 class SlovoRow:
     attachment_id: str
     label: str
+    source_label: str
     split: str
     video_path: str
 
@@ -78,7 +89,9 @@ class SlovoRow:
 class SampleRecord:
     sample_id: str
     label: str
+    source_label: str
     split: str
+    source: str
     source_dataset: str
     source_path: str
     byte_size: int
@@ -94,7 +107,9 @@ class SampleRecord:
         return {
             "sample_id": self.sample_id,
             "label": self.label,
+            "source_label": self.source_label,
             "split": self.split,
+            "source": self.source,
             "source_dataset": self.source_dataset,
             "source_path": self.source_path,
             "byte_size": self.byte_size,
@@ -212,7 +227,8 @@ def read_annotations(source: SlovoSource) -> list[SlovoRow]:
     rows: list[SlovoRow] = []
     for raw in reader:
         attachment_id = str(raw.get("attachment_id", "")).strip()
-        label = normalize_label(str(raw.get("text", "")))
+        source_label = str(raw.get("text", "")).strip()
+        label = canonical_label(source_label)
         if not attachment_id or not label:
             continue
         split = "train" if is_train_value(raw.get("train")) else "validation"
@@ -221,6 +237,7 @@ def read_annotations(source: SlovoSource) -> list[SlovoRow]:
             SlovoRow(
                 attachment_id=attachment_id,
                 label=label,
+                source_label=source_label,
                 split=split,
                 video_path=video_path,
             )
@@ -234,6 +251,11 @@ def is_train_value(value: object) -> bool:
 
 def normalize_label(value: str) -> str:
     return value.strip().lower()
+
+
+def canonical_label(value: str) -> str:
+    normalized = normalize_label(value)
+    return SLOVO_LABEL_ALIASES.get(normalized, normalized)
 
 
 def sample_id_for(label: str, attachment_id: str) -> str:
@@ -284,13 +306,19 @@ def build_materialized_manifest(
 ) -> dict[str, object]:
     target_gestures = target_gestures or TARGET_GESTURES
     target_counts = target_counts or TARGET_COUNTS
+    class_targets = {
+        label: dict(target_counts)
+        for label in target_gestures
+    }
+    class_targets[NO_EVENT_LABEL] = dict(NO_EVENT_TARGET_COUNTS)
+    target_labels = set(class_targets)
     excluded_ids = load_live_smoke_exclusions(source_manifest_path, live_manifest_path)
     rows_by_label_split: dict[tuple[str, str], list[SlovoRow]] = {}
     missing_video_rows: list[dict[str, str]] = []
     excluded_rows: list[dict[str, str]] = []
 
     for row in rows:
-        if row.label not in target_gestures:
+        if row.label not in target_labels:
             continue
         if row.video_path not in source.video_paths:
             missing_video_rows.append(
@@ -316,10 +344,12 @@ def build_materialized_manifest(
 
     samples: list[SampleRecord] = []
     class_counts: dict[str, dict[str, int]] = {}
+    class_status: dict[str, dict[str, object]] = {}
     shortages: list[dict[str, object]] = []
-    for label in target_gestures:
+    for label in list(target_gestures) + [NO_EVENT_LABEL]:
         class_counts[label] = {}
-        for split, target_count in target_counts.items():
+        targets = class_targets[label]
+        for split, target_count in targets.items():
             candidates = sorted(
                 rows_by_label_split.get((label, split), []),
                 key=lambda row: row.attachment_id,
@@ -342,32 +372,11 @@ def build_materialized_manifest(
             class_counts[label].get("train", 0)
             + class_counts[label].get("validation", 0)
         )
-
-    class_counts["_no_event"] = {
-        "train": 0,
-        "validation": 0,
-        "total": 0,
-    }
-    shortages.extend(
-        [
-            {
-                "label": "_no_event",
-                "split": "train",
-                "target": 10,
-                "materialized": 0,
-                "missing": 10,
-                "reason": "requires legal no-hand/pause/background windows outside trimmed gesture clips",
-            },
-            {
-                "label": "_no_event",
-                "split": "validation",
-                "target": 4,
-                "materialized": 0,
-                "missing": 4,
-                "reason": "requires legal no-hand/pause/background windows outside trimmed gesture clips",
-            },
-        ]
-    )
+        class_status[label] = status_for_class(
+            label=label,
+            targets=targets,
+            counts=class_counts[label],
+        )
 
     return {
         "schema_version": 1,
@@ -381,12 +390,16 @@ def build_materialized_manifest(
         "target_gestures": target_gestures,
         "target_counts": {
             "gestures": target_counts,
-            "_no_event": {
-                "train": 10,
-                "validation": 4,
-            },
+            NO_EVENT_LABEL: NO_EVENT_TARGET_COUNTS,
         },
         "materialized_counts": class_counts,
+        "class_status": class_status,
+        "issue_closure_ready": all(
+            item["status"] in {"ok", "shortage"}
+            and int(item["materialized_train"]) > 0
+            and int(item["materialized_validation"]) > 0
+            for item in class_status.values()
+        ),
         "samples": [sample.as_dict() for sample in samples],
         "live_smoke_exclusions": {
             "source": [
@@ -403,11 +416,59 @@ def build_materialized_manifest(
             "license_url": LICENSE_URL,
             "attribution": ATTRIBUTION,
         },
+        "label_canonicalization": {
+            "policy": "Only explicit orthographic/runtime aliases are canonicalized; semantic synonyms are not remapped silently.",
+            "aliases": SLOVO_LABEL_ALIASES,
+            "non_goal_examples": {
+                "здравствуйте": "candidate synonym only; not remapped to привет",
+                "работа": "different word; not remapped to работать",
+            },
+        },
+        "source_search_report": {
+            "привет": "Found as source label Привет! in local Slovo annotations.csv: 15 train / 5 validation before live smoke exclusion.",
+            NO_EVENT_LABEL: "Found as source label no_event in local Slovo annotations.csv: 300 train / 100 validation before target selection.",
+        },
         "known_limitations": [
             "Heavy Slovo videos are not copied or committed to this repository.",
-            "The local Slovo trimmed archive does not contain annotated rows for привет; the live smoke example remains excluded from training.",
-            "_no_event requires legal no-hand/pause/background windows from original or 360p sources and is not fabricated by this script.",
+            "Slovo source label Привет! is canonicalized to runtime/demo label привет; the live smoke example remains excluded from training.",
+            "Slovo source label no_event is canonicalized to runtime background label _no_event; fake background clips are not created.",
+            "After excluding PR #77 live smoke clips, most gesture classes remain below the 15/5 target and are marked as shortage.",
         ],
+    }
+
+
+def status_for_class(
+    *,
+    label: str,
+    targets: dict[str, int],
+    counts: dict[str, int],
+) -> dict[str, object]:
+    target_train = int(targets["train"])
+    target_validation = int(targets["validation"])
+    materialized_train = int(counts.get("train", 0))
+    materialized_validation = int(counts.get("validation", 0))
+    shortage_train = max(0, target_train - materialized_train)
+    shortage_validation = max(0, target_validation - materialized_validation)
+    if materialized_train == 0 or materialized_validation == 0:
+        status = "missing"
+        notes = "No usable train or validation records were materialized from legal local sources."
+    elif shortage_train or shortage_validation:
+        status = "shortage"
+        notes = "Usable train and validation records exist, but materialized counts are below target after exclusions."
+    else:
+        status = "ok"
+        notes = "Target train and validation counts were materialized from legal local sources."
+    if label == NO_EVENT_LABEL and status == "ok":
+        notes = "Runtime background class was materialized from explicit Slovo no_event rows."
+    return {
+        "target_train": target_train,
+        "target_validation": target_validation,
+        "materialized_train": materialized_train,
+        "materialized_validation": materialized_validation,
+        "status": status,
+        "shortage_train": shortage_train,
+        "shortage_validation": shortage_validation,
+        "notes": notes,
     }
 
 
@@ -416,7 +477,9 @@ def sample_record_for(source: SlovoSource, row: SlovoRow, label: str) -> SampleR
     return SampleRecord(
         sample_id=sample_id_for(label, row.attachment_id),
         label=label,
+        source_label=row.source_label,
         split=row.split,
+        source="slovo",
         source_dataset=SOURCE_DATASET,
         source_path=source_path_for(source, row.video_path),
         byte_size=byte_size,
@@ -496,10 +559,19 @@ def main() -> int:
     print(f"materialized manifest: {output_path}")
     for label in TARGET_GESTURES:
         item = counts[label]
+        status = manifest["class_status"][label]["status"]
         print(
             f"{label}: train={item['train']}/{TARGET_COUNTS['train']} "
-            f"validation={item['validation']}/{TARGET_COUNTS['validation']}"
+            f"validation={item['validation']}/{TARGET_COUNTS['validation']} "
+            f"status={status}"
         )
+    no_event = counts[NO_EVENT_LABEL]
+    no_event_status = manifest["class_status"][NO_EVENT_LABEL]["status"]
+    print(
+        f"{NO_EVENT_LABEL}: train={no_event['train']}/{NO_EVENT_TARGET_COUNTS['train']} "
+        f"validation={no_event['validation']}/{NO_EVENT_TARGET_COUNTS['validation']} "
+        f"status={no_event_status}"
+    )
     shortages = manifest["shortages"]
     if shortages:
         print(f"shortages: {len(shortages)}", file=sys.stderr)

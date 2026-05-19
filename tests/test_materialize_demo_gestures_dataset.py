@@ -23,12 +23,18 @@ def write_fake_slovo(tmp_path: Path) -> Path:
     (slovo_root / "train").mkdir(parents=True)
     (slovo_root / "test").mkdir(parents=True)
     rows = [
+        ("f17a6060-0000-0000-0000-000000000000", "Привет!", "True"),
+        ("aaaaaaa1-0000-0000-0000-000000000000", "Привет!", "True"),
+        ("aaaaaaa2-0000-0000-0000-000000000000", "Привет!", "False"),
+        ("bbbbbbb1-0000-0000-0000-000000000000", "Здравствуйте", "True"),
         ("8ba230dc-0000-0000-0000-000000000000", "Пока", "True"),
         ("11111111-0000-0000-0000-000000000000", "Пока", "True"),
         ("22222222-0000-0000-0000-000000000000", "Пока", "False"),
         ("33333333-0000-0000-0000-000000000000", "Работа", "True"),
         ("44444444-0000-0000-0000-000000000000", "работать", "True"),
         ("55555555-0000-0000-0000-000000000000", "работать", "False"),
+        ("no111111-0000-0000-0000-000000000000", "no_event", "True"),
+        ("no222222-0000-0000-0000-000000000000", "no_event", "False"),
     ]
     annotations = slovo_root / "annotations.csv"
     annotations.write_text(
@@ -88,7 +94,7 @@ def test_materialize_selects_train_validation_and_hashes_files(tmp_path: Path) -
     samples = manifest["samples"]
     by_id = {sample["sample_id"]: sample for sample in samples}
 
-    assert manifest["video_files_found"] == 6
+    assert manifest["video_files_found"] == 12
     assert manifest["materialized_counts"]["пока"] == {
         "train": 1,
         "validation": 1,
@@ -103,8 +109,13 @@ def test_materialize_selects_train_validation_and_hashes_files(tmp_path: Path) -
     payload = b"video:11111111-0000-0000-0000-000000000000"
     assert sample["byte_size"] == len(payload)
     assert sample["sha256"] == hashlib.sha256(payload).hexdigest()
+    assert sample["source"] == "slovo"
+    assert sample["source_label"] == "Пока"
     assert sample["license"] == "CC BY-SA 4.0"
     assert sample["excluded_from_live_smoke"] is False
+    assert manifest["class_status"]["пока"]["status"] == "ok"
+    assert manifest["class_status"]["работать"]["status"] == "ok"
+    assert manifest["class_status"]["_no_event"]["status"] == "shortage"
 
 
 def test_materialize_excludes_live_smoke_samples(tmp_path: Path) -> None:
@@ -150,6 +161,7 @@ def test_materialize_reports_shortage_without_fake_samples(tmp_path: Path) -> No
         "materialized": 0,
         "missing": 1,
     } in manifest["shortages"]
+    assert manifest["class_status"]["пока"]["status"] == "missing"
 
 
 def test_materialize_does_not_remap_labels_manually(tmp_path: Path) -> None:
@@ -161,6 +173,43 @@ def test_materialize_does_not_remap_labels_manually(tmp_path: Path) -> None:
 
     assert "slovo_rabotat_33333333" not in sample_ids
     assert "slovo_rabotat_44444444" in sample_ids
+    assert "slovo_privet_bbbbbbb1" not in sample_ids
+
+
+def test_materialize_uses_explicit_label_aliases_without_silent_remap(tmp_path: Path) -> None:
+    slovo_root = write_fake_slovo(tmp_path)
+    source_manifest = tmp_path / "source_manifest.json"
+    live_manifest = tmp_path / "live_manifest.json"
+    write_manifest(source_manifest, ["slovo_privet_f17a6060"])
+    write_manifest(live_manifest, [])
+    source = MATERIALIZE.discover_slovo_source(slovo_root)
+    rows = MATERIALIZE.read_annotations(source)
+
+    manifest = MATERIALIZE.build_materialized_manifest(
+        source=source,
+        rows=rows,
+        source_manifest_path=source_manifest,
+        live_manifest_path=live_manifest,
+        target_gestures=["привет"],
+        target_counts={
+            "train": 1,
+            "validation": 1,
+        },
+    )
+    samples = {
+        sample["sample_id"]: sample
+        for sample in manifest["samples"]
+    }
+
+    assert "slovo_privet_f17a6060" not in samples
+    assert samples["slovo_privet_aaaaaaa1"]["label"] == "привет"
+    assert samples["slovo_privet_aaaaaaa1"]["source_label"] == "Привет!"
+    assert samples["slovo_no_event_no111111"]["label"] == "_no_event"
+    assert samples["slovo_no_event_no111111"]["source_label"] == "no_event"
+    assert manifest["label_canonicalization"]["aliases"] == {
+        "привет!": "привет",
+        "no_event": "_no_event",
+    }
 
 
 def test_strict_mode_returns_non_zero_on_shortage(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:

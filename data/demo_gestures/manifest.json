@@ -21,7 +21,8 @@
       "The full Slovo dataset is about 16 GB and is intentionally not committed to this clean repository.",
       "This manifest records reproducible source groups and split rules.",
       "Local Slovo is available in the old mvp1 project and materialization output is stored in data/demo_gestures/materialized_manifest.json.",
-      "The materialized manifest records shortages separately from target counts; target counts must not be treated as confirmed physical samples."
+      "The materialized manifest records shortages separately from target counts; target counts must not be treated as confirmed physical samples.",
+      "Slovo source labels Привет! and no_event are canonicalized explicitly; semantic synonyms are not remapped silently."
     ]
   },
   "expected_local_sources": [
@@ -39,20 +40,6 @@
         "annotations.csv",
         "train/*.mp4",
         "test/*.mp4"
-      ]
-    },
-    {
-      "source_id": "slovo_original_or_360p_archive",
-      "kind": "archive",
-      "expected_env_var": "SLOVO_ORIGINAL_OR_360P_ARCHIVE",
-      "default_local_path": "/Users/mariaburtseva/Documents/проект грант/mvp1/SuperLuchito--SimpleGesture2Letter-Model-Version-2/backend/data/slovo_full360.zip",
-      "required_for": [
-        "_no_event"
-      ],
-      "upstream_url": "https://rndml-team-cv.obs.ru-moscow-1.hc.sbercloud.ru/datasets/slovo/slovo_full360.zip",
-      "expected_contents": [
-        "annotations.csv",
-        "original or resized videos with non-gesture intervals"
       ]
     }
   ],
@@ -80,7 +67,17 @@
       "train": 10,
       "validation": 3
     },
-    "label_normalization": "Only whitespace trim and lowercase for Slovo labels that differ only by capitalization, such as Пока and Плохо. Labels must not be manually remapped to a different word."
+    "label_normalization": "Whitespace trim and lowercase are allowed for orthographic variants. Explicit aliases are limited to Привет! -> привет and no_event -> _no_event. Semantic synonyms such as здравствуйте must not be remapped to привет."
+  },
+  "label_canonicalization": {
+    "aliases": {
+      "привет!": "привет",
+      "no_event": "_no_event"
+    },
+    "non_goal_examples": {
+      "здравствуйте": "candidate synonym only; not remapped to привет",
+      "работа": "different word; not remapped to работать"
+    }
   },
   "final_demo_dictionary": [
     "привет",
@@ -153,9 +150,9 @@
   },
   "materialized_class_counts": {
     "привет": {
-      "train": 0,
-      "validation": 0,
-      "total": 0
+      "train": 14,
+      "validation": 5,
+      "total": 19
     },
     "пока": {
       "train": 14,
@@ -203,9 +200,9 @@
       "total": 19
     },
     "_no_event": {
-      "train": 0,
-      "validation": 0,
-      "total": 0
+      "train": 10,
+      "validation": 4,
+      "total": 14
     }
   },
   "classes": [
@@ -213,22 +210,22 @@
       "label": "привет",
       "role": "gesture",
       "source": "slovo",
-      "upstream_label": "привет",
+      "upstream_label": "Привет!",
       "train": {
         "count": 15,
         "source_group_id": "slovo_privet_train",
-        "selection_rule": "Slovo annotations text == привет and train == True; sort by attachment_id; exclude slovo_privet_f17a6060 if present."
+        "selection_rule": "Slovo annotations text == Привет! and train == True; canonicalize explicitly to привет; sort by attachment_id; exclude slovo_privet_f17a6060 if present."
       },
       "validation": {
         "count": 5,
         "source_group_id": "slovo_privet_validation",
-        "selection_rule": "Slovo annotations text == привет and train == False; sort by attachment_id; exclude slovo_privet_f17a6060 if present."
+        "selection_rule": "Slovo annotations text == Привет! and train == False; canonicalize explicitly to привет; sort by attachment_id; exclude slovo_privet_f17a6060 if present."
       },
       "license": "CC BY-SA 4.0",
       "license_url": "https://creativecommons.org/licenses/by-sa/4.0/",
       "attribution": "Slovo Russian Sign Language Dataset and Models, hukenovs/slovo",
       "modified": false,
-      "modification_notes": "No content modification in this manifest."
+      "modification_notes": "Runtime/demo label stores привет; source label Привет! is retained in sample records as source_label."
     },
     {
       "label": "пока",
@@ -422,23 +419,23 @@
     {
       "label": "_no_event",
       "role": "background",
-      "source": "slovo_original_or_360p_archive",
-      "upstream_label": null,
+      "source": "slovo",
+      "upstream_label": "no_event",
       "train": {
         "count": 10,
         "source_group_id": "slovo_no_event_train",
-        "selection_rule": "Select no-hand or pause windows outside annotated gesture intervals from legal Slovo original/360p videos; exclude any windows overlapping final_demo_dictionary gesture intervals."
+        "selection_rule": "Slovo annotations text == no_event and train == True; canonicalize explicitly to _no_event; sort by attachment_id; exclude live smoke samples if present."
       },
       "validation": {
         "count": 4,
         "source_group_id": "slovo_no_event_validation",
-        "selection_rule": "Use held-out users or train=False source videos for no-hand/pause windows; exclude live smoke videos and any gesture intervals."
+        "selection_rule": "Slovo annotations text == no_event and train == False; canonicalize explicitly to _no_event; sort by attachment_id; exclude live smoke samples if present."
       },
       "license": "CC BY-SA 4.0",
       "license_url": "https://creativecommons.org/licenses/by-sa/4.0/",
       "attribution": "Slovo Russian Sign Language Dataset and Models, hukenovs/slovo",
-      "modified": true,
-      "modification_notes": "Background windows must be derived locally from allowed non-gesture intervals. They are not fabricated or committed in this PR because trimmed Slovo clips contain gestures rather than explicit background windows.",
+      "modified": false,
+      "modification_notes": "Runtime label stores _no_event; source label no_event is retained in sample records as source_label. No dummy or random background clips are created.",
       "required_by_runtime": true,
       "runtime_reason": "Current pose_words classifier labels include _no_event and runtime maps that label to no_result."
     }
@@ -464,9 +461,9 @@
   },
   "known_limitations": [
     "Local Slovo was found in the old mvp1 project and materialized through scripts/materialize_demo_gestures_dataset.py without committing videos or archives.",
-    "The local Slovo annotations do not contain label привет, so the materialized manifest keeps привет at 0 train / 0 validation and records a shortage.",
+    "The local Slovo annotations contain source label Привет!, which is explicitly canonicalized to привет; after excluding live smoke sample slovo_privet_f17a6060 the class has 14 train / 5 validation.",
     "After excluding PR #77 live smoke clips, most Slovo-backed gestures have 19 usable samples rather than the target 20.",
-    "_no_event is required by the current runtime label set but needs legal no-hand/pause windows from original or 360p Slovo sources; no fake background clips are committed.",
+    "The local Slovo annotations contain source label no_event, which is explicitly canonicalized to _no_event and materialized as 10 train / 4 validation.",
     "Domain shift may remain between Slovo train/validation clips and live smoke samples from PR #77.",
     "This task does not train a model, export artifacts, or change decoder thresholds."
   ]
