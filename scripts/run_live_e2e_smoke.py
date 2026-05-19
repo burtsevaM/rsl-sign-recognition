@@ -120,6 +120,15 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Sleep between frames using sample FPS to mimic real-time cadence.",
     )
+    parser.add_argument(
+        "--flush-boundary-frames",
+        type=int,
+        default=1,
+        help=(
+            "Number of black no-hand frames sent after each clip to flush an "
+            "active isolated gesture segment."
+        ),
+    )
     return parser
 
 
@@ -297,6 +306,15 @@ def iter_jpeg_frames(
             break
 
 
+def black_jpeg_frame(*, jpeg_quality: int) -> bytes:
+    if not 1 <= jpeg_quality <= 100:
+        raise SmokeError("--jpeg-quality must be in range 1..100")
+    image = Image.new("RGB", (32, 32), color=(0, 0, 0))
+    buffer = BytesIO()
+    image.save(buffer, format="JPEG", quality=jpeg_quality)
+    return buffer.getvalue()
+
+
 def validate_recognition_result(message: dict[str, object]) -> dict[str, object]:
     if message.get("type") != "recognition.result":
         raise SmokeError(f"expected recognition.result, got: {message}")
@@ -338,6 +356,7 @@ async def run_sample(
     frame_stride: int,
     jpeg_quality: int,
     realtime: bool,
+    flush_boundary_frames: int,
 ) -> SampleResult:
     websockets = require_dependency(
         "websockets",
@@ -352,14 +371,18 @@ async def run_sample(
     frame_delay = (1.0 / sample.fps) if realtime and sample.fps else 0.0
 
     async with websockets.connect(ws_url, max_size=8 * 1024 * 1024) as websocket:
-        for frame_bytes in iter_jpeg_frames(
-            sample,
-            max_frames=max_frames,
-            frame_stride=frame_stride,
-            jpeg_quality=jpeg_quality,
-        ):
+        def remember_commit(payload: dict[str, object]) -> None:
+            nonlocal actual_label, confidence, committed
+            text_state = payload["text_state"]
+            is_committed = bool(text_state.get("committed"))
+            if is_committed:
+                committed = True
+                actual_label = str(payload["word"])
+                confidence = float(payload["confidence"])
+                committed_labels.append(actual_label)
+
+        async def send_and_receive(frame_bytes: bytes) -> None:
             await websocket.send(frame_bytes)
-            frames_sent += 1
             raw_message = await websocket.recv()
             if not isinstance(raw_message, str):
                 raise SmokeError("backend returned a non-text WebSocket response")
@@ -371,17 +394,24 @@ async def run_sample(
                 raise SmokeError("backend returned non-object JSON over WebSocket")
             if message.get("type") == "error":
                 raise SmokeError(f"backend returned error for {sample.sample_id}: {message}")
+            remember_commit(validate_recognition_result(message))
 
-            payload = validate_recognition_result(message)
-            text_state = payload["text_state"]
-            is_committed = bool(text_state.get("committed"))
-            if is_committed:
-                committed = True
-                actual_label = str(payload["word"])
-                confidence = float(payload["confidence"])
-                committed_labels.append(actual_label)
+        for frame_bytes in iter_jpeg_frames(
+            sample,
+            max_frames=max_frames,
+            frame_stride=frame_stride,
+            jpeg_quality=jpeg_quality,
+        ):
+            await send_and_receive(frame_bytes)
+            frames_sent += 1
             if frame_delay > 0:
                 await asyncio.sleep(frame_delay)
+        if flush_boundary_frames < 0:
+            raise SmokeError("--flush-boundary-frames must be non-negative")
+        boundary = black_jpeg_frame(jpeg_quality=jpeg_quality)
+        for _ in range(flush_boundary_frames):
+            await send_and_receive(boundary)
+            frames_sent += 1
 
     passed = sample_passed(
         expected_label=sample.expected_label,
@@ -421,6 +451,7 @@ async def run_smoke(args: argparse.Namespace) -> list[SampleResult]:
                 frame_stride=args.frame_stride,
                 jpeg_quality=args.jpeg_quality,
                 realtime=args.realtime,
+                flush_boundary_frames=args.flush_boundary_frames,
             )
         )
     return results

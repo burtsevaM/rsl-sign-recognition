@@ -156,7 +156,7 @@ def test_source_and_expected_local_paths_are_recorded() -> None:
 
     assert set(expected_sources) == {"slovo_trimmed_archive"}
     assert expected_sources["slovo_trimmed_archive"]["expected_env_var"] == "SLOVO_TRIMMED_ARCHIVE"
-    assert "mvp1/SuperLuchito--SimpleGesture2Letter-Model-Version-2" in expected_sources["slovo_trimmed_archive"]["default_local_path"]
+    assert expected_sources["slovo_trimmed_archive"]["default_local_path"] == "data/slovo/slovo.zip"
 
 
 def test_materialized_counts_are_not_confused_with_targets() -> None:

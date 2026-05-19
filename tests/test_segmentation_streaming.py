@@ -143,6 +143,23 @@ def test_streaming_flush_emits_active_sign_segment_once() -> None:
     assert repeated.sign_segments == []
 
 
+def test_streaming_flush_emits_short_isolated_segment_before_first_window() -> None:
+    model = IndexPatternModel()
+    segmenter = StreamingBioSegmenter(model=model, window=20, step=4, min_len=1)
+
+    for idx in range(8):
+        segmenter.update(_feature(idx))
+
+    flushed = segmenter.flush_active_segments()
+
+    assert len(model.calls) == 0
+    assert flushed.ran_inference is True
+    assert [(segment.start, segment.end) for segment in flushed.sign_segments] == [
+        (0, 7)
+    ]
+    assert segmenter.get_feature_span(0, 7) is not None
+
+
 def test_streaming_cool_off_suppresses_close_duplicate_segments() -> None:
     model = IndexPatternModel(
         sign={0: "B", 1: "I", 2: "O", 3: "B", 4: "I", 5: "O"}

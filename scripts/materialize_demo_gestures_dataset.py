@@ -17,7 +17,8 @@ import zipfile
 
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
-DEFAULT_SLOVO_ROOT = Path(
+DEFAULT_SLOVO_ROOT = REPO_ROOT / "data/slovo"
+LEGACY_MVP1_SLOVO_ROOT = Path(
     "/Users/mariaburtseva/Documents/проект грант/mvp1/"
     "SuperLuchito--SimpleGesture2Letter-Model-Version-2/backend/data/slovo"
 )
@@ -132,7 +133,7 @@ def build_parser() -> argparse.ArgumentParser:
         default=None,
         help=(
             "Path to local Slovo root, unpacked directory, or slovo.zip. "
-            "Defaults to SLOVO_DATA_ROOT or the known mvp1 local path."
+            "Defaults to SLOVO_DATA_ROOT, repo-local data/slovo, or the known mvp1 local path."
         ),
     )
     parser.add_argument(
@@ -164,6 +165,10 @@ def resolve_slovo_root(path_text: str | None) -> Path:
     env_path = os.environ.get("SLOVO_DATA_ROOT")
     if env_path:
         return Path(env_path).expanduser().resolve()
+    if DEFAULT_SLOVO_ROOT.exists():
+        return DEFAULT_SLOVO_ROOT
+    if LEGACY_MVP1_SLOVO_ROOT.exists():
+        return LEGACY_MVP1_SLOVO_ROOT
     return DEFAULT_SLOVO_ROOT
 
 

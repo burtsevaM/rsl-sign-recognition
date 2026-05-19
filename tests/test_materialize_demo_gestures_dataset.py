@@ -68,6 +68,12 @@ def write_manifest(path: Path, excluded_sample_ids: list[str]) -> None:
     )
 
 
+def test_resolve_slovo_root_defaults_to_repo_local_path(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.delenv("SLOVO_DATA_ROOT", raising=False)
+
+    assert MATERIALIZE.resolve_slovo_root(None) == MATERIALIZE.DEFAULT_SLOVO_ROOT
+
+
 def build_fake_manifest(tmp_path: Path, excluded_sample_ids: list[str] | None = None) -> dict[str, object]:
     slovo_root = write_fake_slovo(tmp_path)
     source_manifest = tmp_path / "source_manifest.json"

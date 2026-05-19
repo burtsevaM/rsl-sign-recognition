@@ -107,6 +107,7 @@ def test_build_parser_exposes_sample_selection_and_timeout_flags() -> None:
 
     assert "--sample-id" in help_text
     assert "--http-timeout-seconds" in help_text
+    assert "--flush-boundary-frames" in help_text
 
 
 def test_sample_passed_requires_committed_result() -> None:
